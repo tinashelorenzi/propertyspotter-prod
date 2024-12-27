@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 django = "*"
+pillow = "*"
+mysqlclient = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

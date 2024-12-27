@@ -1,1 +1,1 @@
-# property-spotter
+# propertyspotter

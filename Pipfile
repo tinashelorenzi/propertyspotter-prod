@@ -8,6 +8,8 @@ django = "*"
 pillow = "*"
 mysqlclient = "*"
 python-dotenv = "*"
+django-filter = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 

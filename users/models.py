@@ -10,7 +10,12 @@ class Role(models.TextChoices):
     ADMIN = 'Admin', 'System Administrator'
 
 class Agency(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(
+    primary_key=True,
+    max_length=36,
+    default=uuid.uuid4,
+    editable=False
+)
     name = models.CharField(max_length=100, unique=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
@@ -32,7 +37,12 @@ class Agency(models.Model):
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [(role.value, role.label) for role in Role]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = id = models.CharField(
+    primary_key=True,
+    max_length=36,
+    default=uuid.uuid4,
+    editable=False
+)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=15, choices=ROLE_CHOICES, default="Spotter")
     agency = models.ForeignKey(

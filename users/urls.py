@@ -12,4 +12,7 @@ urlpatterns = [
     path('login/', views.login_user, name='login-user'),  # POST to log in and get JWT
     path('refresh/', views.login_user, name='token-refresh'),  # Refresh expired token
     path('logout/', views.logout_user, name='logout-user'),  # Logout user (optional)
+
+    # Render view routes
+    path('dashboard/login/', views.login_view, name='loginview'),  # Render login page
 ]

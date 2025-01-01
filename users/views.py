@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from .models import CustomUser, Agency
@@ -10,8 +12,14 @@ from .authentication import BodyTokenAuthentication
 from .serializers import UserSerializer
 import jwt
 from django.conf import settings
+#Render
+from django.shortcuts import render
 
 User = get_user_model()
+
+
+def login_view(request):
+    return render(request, 'login.html')
 
 def verify_token(token):
     """Verify JWT token and return user"""
@@ -77,44 +85,36 @@ def list_users(request):
     return Response(serializer.data)
 
 @api_view(['POST'])
-def get_user(request):
-    """Get user details - Admin can get any user, Agency_Admin can only get users from their agency"""
-    token = request.data.get('token')
-    email = request.data.get('email')
-    
-    requesting_user = verify_token(token)
-    if not requesting_user:
+def get_user(request, pk):
+    # Extract the token from the request body
+    token = request.data.get('token', None)
+
+    # Check if the token is provided
+    if not token:
         return Response(
-            {"error": "Invalid token"}, 
+            {"error": "Authentication token is required."},
             status=status.HTTP_401_UNAUTHORIZED
         )
-    
+
+    # Authenticate the token
+    jwt_auth = JWTAuthentication()
     try:
-        requested_user = User.objects.get(email=email)
-        
-        # Check permissions
-        if requesting_user.role == 'Admin':
-            pass  # Admin can access any user
-        elif requesting_user.role == 'Agency_Admin':
-            if requested_user.agency != requesting_user.agency:
-                return Response(
-                    {"error": "You can only access users from your agency"}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-        else:
-            return Response(
-                {"error": "Insufficient permissions"}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-            
-        serializer = UserSerializer(requested_user)
-        return Response(serializer.data)
-        
-    except User.DoesNotExist:
+        validated_token = jwt_auth.get_validated_token(token)
+        user = jwt_auth.get_user(validated_token)
+    except Exception:
         return Response(
-            {"error": "User not found"}, 
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "Invalid or expired token."},
+            status=status.HTTP_401_UNAUTHORIZED
         )
+
+    # Fetch the user with the provided UUID
+    user_requested = get_object_or_404(CustomUser, pk=pk)
+
+    # Serialize the user data
+    serializer = UserSerializer(user_requested)
+
+    # Return the serialized data
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def refresh_token(request):
@@ -200,90 +200,87 @@ def create_user(request):
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-def update_user(request):
-    """Update user details"""
-    token = request.data.get('token')
-    email = request.data.get('email')
-    
-    updating_user = verify_token(token)
-    if not updating_user:
+@api_view(['PATCH'])
+def update_user(request, pk):
+    # Try extracting the token from the Authorization header
+    token = request.headers.get('Authorization')
+
+    if not token:
         return Response(
-            {"error": "Invalid token"}, 
+            {"error": "Authentication token is required."},
             status=status.HTTP_401_UNAUTHORIZED
-        )
-    
-    try:
-        user_to_update = User.objects.get(email=email)
-        
-        # Check permissions
-        if updating_user.role == 'Admin':
-            pass  # Admin can update any user
-        elif updating_user.role == 'Agency_Admin':
-            if user_to_update.agency != updating_user.agency:
-                return Response(
-                    {"error": "You can only update users from your agency"}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-        else:
-            return Response(
-                {"error": "Insufficient permissions"}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Remove token and email from data before serialization
-        update_data = request.data.copy()
-        update_data.pop('token')
-        update_data.pop('email')
-        
-        serializer = UserSerializer(user_to_update, data=update_data, partial=True)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(UserSerializer(user).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-    except User.DoesNotExist:
-        return Response(
-            {"error": "User not found"}, 
-            status=status.HTTP_404_NOT_FOUND
         )
 
-@api_view(['POST'])
-def delete_user(request):
-    """Delete user"""
-    token = request.data.get('token')
-    email = request.data.get('email')
-    
-    deleting_user = verify_token(token)
-    if not deleting_user:
+    # If the token is provided with the 'Bearer ' prefix, remove it
+    if token.startswith('Bearer '):
+        token = token[7:]
+
+    # Authenticate the token
+    jwt_auth = JWTAuthentication()
+    try:
+        validated_token = jwt_auth.get_validated_token(token)
+        user = jwt_auth.get_user(validated_token)
+    except Exception:
         return Response(
-            {"error": "Invalid token"}, 
+            {"error": "Invalid or expired token."},
             status=status.HTTP_401_UNAUTHORIZED
         )
-    
-    try:
-        user_to_delete = User.objects.get(email=email)
-        
-        # Check permissions
-        if deleting_user.role == 'Admin':
-            pass  # Admin can delete any user
-        elif deleting_user.role == 'Agency_Admin':
-            if user_to_delete.agency != deleting_user.agency:
-                return Response(
-                    {"error": "You can only delete users from your agency"}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-        else:
-            return Response(
-                {"error": "Insufficient permissions"}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-            
-        user_to_delete.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        
-    except User.DoesNotExist:
+
+    # Fetch the user to be updated
+    user_to_update = get_object_or_404(CustomUser, pk=pk)
+
+    # Check if the authenticated user has permission to update (optional)
+    if not user.is_staff and user.id != user_to_update.id:
         return Response(
-            {"error": "User not found"}, 
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "You do not have permission to update this user."},
+            status=status.HTTP_403_FORBIDDEN
         )
+
+    # Partially update the user using the serializer
+    serializer = UserSerializer(user_to_update, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # Return validation errors if any
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_user(request, pk):
+    # Extract the token from the request body
+    token = request.data.get('token', None)
+
+    # Check if the token is provided
+    if not token:
+        return Response(
+            {"error": "Authentication token is required."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Authenticate the token
+    jwt_auth = JWTAuthentication()
+    try:
+        validated_token = jwt_auth.get_validated_token(token)
+        user = jwt_auth.get_user(validated_token)
+    except Exception:
+        return Response(
+            {"error": "Invalid or expired token."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Fetch the user to be deleted
+    user_to_delete = get_object_or_404(CustomUser, pk=pk)
+
+    # Check if the authenticated user has permission to delete (optional)
+    if not user.is_staff and user.id != user_to_delete.id:
+        return Response(
+            {"error": "You do not have permission to delete this user."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Delete the user
+    user_to_delete.delete()
+    return Response(
+        {"message": "User successfully deleted."},
+        status=status.HTTP_204_NO_CONTENT
+    )

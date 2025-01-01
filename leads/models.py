@@ -22,6 +22,20 @@ class Lead(models.Model):
     potential = models.CharField(
         max_length=10, choices=LeadPotential.choices, default=LeadPotential.COLD
     )
+    assigned_agency = models.ForeignKey(
+        'users.Agency',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_leads'
+    )
+    assigned_agent = models.ForeignKey(
+        'users.CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_leads'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -33,6 +47,8 @@ class Lead(models.Model):
     status = models.CharField(
         max_length=30, choices=PropertyStatus.choices, default=PropertyStatus.NEW_SUBMISSION
     )
+    pushed_to_agency_at = models.DateTimeField(null=True, blank=True)
+    assigned_to_agent_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Lead: {self.property.address if self.property else 'No Address'} - {self.potential}"

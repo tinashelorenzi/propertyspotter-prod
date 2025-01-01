@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from .views import login_view
 
 """
 URL configuration for propertyspotter project.
@@ -24,4 +25,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/properties/', include('properties.urls')),
+    path('api/leads/', include('leads.urls')),
+    path('', include('app.urls')),
 ]

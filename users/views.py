@@ -68,7 +68,6 @@ def login_user(request):
         )
 
 @api_view(['POST'])
-@authentication_classes([BodyTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def list_users(request):
     """List all users - only accessible by Admin"""
@@ -84,30 +83,10 @@ def list_users(request):
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
-@api_view(['POST'])
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_user(request, pk):
-    # Extract the token from the request body
-    token = request.data.get('token', None)
-
-    # Check if the token is provided
-    if not token:
-        return Response(
-            {"error": "Authentication token is required."},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    # Authenticate the token
-    jwt_auth = JWTAuthentication()
-    try:
-        validated_token = jwt_auth.get_validated_token(token)
-        user = jwt_auth.get_user(validated_token)
-    except Exception:
-        return Response(
-            {"error": "Invalid or expired token."},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    # Fetch the user with the provided UUID
+    # Fetch the user with the provided primary key (UUID)
     user_requested = get_object_or_404(CustomUser, pk=pk)
 
     # Serialize the user data

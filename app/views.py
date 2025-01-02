@@ -28,6 +28,10 @@ def myLeads(request):
 def myHistory(request):
     return render(request, 'spotter_history.html')
 
+@securedRoute
+def myProfile(request):
+    return render(request, 'spotter_profile.html')
+
 @csrf_exempt
 def sessionSave(request):
     print(json.loads(request.body))

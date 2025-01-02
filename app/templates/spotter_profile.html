@@ -1,0 +1,171 @@
+{% extends "spotter_layout.html" %}
+{% load static %}
+
+{% block title %}Profile - PropertySpotter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                    </div>
+                    <h4 class="mb-0">Profile Settings</h4>
+                </div>
+
+                <form id="profileForm" class="needs-validation" novalidate>
+                    <div class="row g-4">
+                        <!-- Personal Information -->
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="{{ USERDATA.first_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="{{ USERDATA.last_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" value="{{ USERDATA.username }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" value="{{ USERDATA.email }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" value="{{ USERDATA.phone }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Role</label>
+                            <input type="text" class="form-control" value="{{ USERDATA.role }}" disabled>
+                        </div>
+
+                        <!-- Password Change Section -->
+                        <div class="col-12">
+                            <hr>
+                            <h5 class="mb-3">Change Password</h5>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" class="form-control" name="old_password" id="oldPassword">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">New Password</label>
+                            <input type="password" class="form-control" name="new_password" id="newPassword">
+                            <div class="password-strength mt-2 d-none">
+                                <small class="text-muted">Password must contain:</small>
+                                <ul class="list-unstyled small">
+                                    <li id="length"><i class="fas fa-times text-danger"></i> At least 8 characters</li>
+                                    <li id="uppercase"><i class="fas fa-times text-danger"></i> One uppercase letter</li>
+                                    <li id="lowercase"><i class="fas fa-times text-danger"></i> One lowercase letter</li>
+                                    <li id="number"><i class="fas fa-times text-danger"></i> One number</li>
+                                    <li id="special"><i class="fas fa-times text-danger"></i> One special character</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" name="confirm_password" id="confirmPassword">
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.password-strength li i.fa-check {
+    color: #198754 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profileForm');
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const strengthIndicator = document.querySelector('.password-strength');
+
+    newPassword.addEventListener('focus', () => {
+        strengthIndicator.classList.remove('d-none');
+    });
+
+    newPassword.addEventListener('input', validatePassword);
+
+    function validatePassword() {
+        const password = newPassword.value;
+        const checks = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password)
+        };
+
+        Object.entries(checks).forEach(([check, valid]) => {
+            const element = document.getElementById(check);
+            const icon = element.querySelector('i');
+            icon.className = valid ? 'fas fa-check text-success' : 'fas fa-times text-danger';
+        });
+
+        return Object.values(checks).every(Boolean);
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        if (newPassword.value && !validatePassword()) {
+            alert('Please ensure your password meets all requirements.');
+            return;
+        }
+
+        if (newPassword.value !== confirmPassword.value) {
+            alert('New passwords do not match.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/user/update', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer {{ token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Profile updated successfully!');
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Error updating profile');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error updating profile');
+        }
+    });
+});
+</script>
+{% endblock %}

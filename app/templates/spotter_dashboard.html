@@ -1,483 +1,297 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotter Dashboard - Property Spotter</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/spotter-dashboard.css' %}">
-    
-</head>
-<body>
-    <div class="dashboard-container">
-        <nav class="main-navbar">
-            <div class="navbar-left">
-                <button id="sidebarCollapse" class="nav-toggle-btn">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="brand">
-                    <img src="{% static 'images/logo.png' %}" alt="Property Spotter" class="logo">
+
+{% extends "spotter_layout.html" %}
+
+{% block title %}Dashboard - PropertySpotter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Cards Row -->
+    <div class="row g-4 mb-4">
+        <!-- Total Leads Card -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Total Leads</h6>
+                        <h3 class="mb-0">{{ total_leads }}</h3>
+                    </div>
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                        <i class="fas fa-clipboard-list text-primary fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>12%
+                    </span>
+                    <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
-            <div class="navbar-center">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" placeholder="Search properties, leads..." class="search-input">
+        </div>
+
+        <!-- Conversion Rate Card -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Conversion Rate</h6>
+                        <h3 class="mb-0">{{ conversion_rate }}%</h3>
+                    </div>
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                        <i class="fas fa-chart-line text-success fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>5%
+                    </span>
+                    <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
-            <div class="navbar-right">
-                <div class="nav-item">
-                    <button class="notification-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="badge">3</span>
-                    </button>
-                </div>
-                <div class="nav-item">
-                    <button class="messages-btn">
-                        <i class="fas fa-envelope"></i>
-                        <span class="badge">5</span>
-                    </button>
-                </div>
-                <div class="nav-item user-profile">
-                    <img src="{% static 'images/default-avatar.png' %}" alt="Profile" class="profile-img">
-                    <div class="user-info">
-                        <span class="user-name">{{ user.full_name }}</span>
-                        <span class="user-role">Spotter</span>
-                    </div>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </nav>
-        <!-- Sidebar -->
-        <nav id="sidebar" class="sidebar">
-            
+        </div>
 
-            <div class="sidebar-user">
-                <img src="{% static 'images/default-avatar.png' %}" alt="User Avatar" class="user-avatar">
-                <div class="user-info">
-                    <h6>{{ user.full_name }}</h6>
-                    <span class="badge bg-primary">Spotter</span>
+        <!-- Revenue Card -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Revenue</h6>
+                        <h3 class="mb-0">${{ revenue }}</h3>
+                    </div>
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                        <i class="fas fa-dollar-sign text-warning fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-success">
+                        <i class="fas fa-arrow-up me-1"></i>8%
+                    </span>
+                    <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
+        </div>
 
-            <ul class="sidebar-nav">
-                <li class="nav-item">
-                    <a href="#" class="nav-link active" data-section="dashboard">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="leads">
-                        <i class="fas fa-lightbulb"></i>
-                        <span>My Leads</span>
-                        <span class="badge bg-danger">3</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="sales">
-                        <i class="fas fa-chart-line"></i>
-                        <span>My Sales</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="properties">
-                        <i class="fas fa-home"></i>
-                        <span>Market Properties</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" data-section="profile">
-                        <i class="fas fa-user"></i>
-                        <span>Profile</span>
-                    </a>
-                </li>
-            </ul>
-
-            <div class="sidebar-footer">
-                <a href="/logout" class="btn btn-logout">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Top Navigation -->
-            
-
-            <!-- Dashboard Content -->
-            <div class="content-wrapper">
-                <!-- Stats Cards -->
-                <div class="row stats-cards">
-                    <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-primary">
-                                <i class="fas fa-lightbulb"></i>
-                            </div>
-                            <div class="stats-info">
-                                <h5>Total Leads</h5>
-                                <h3>24</h3>
-                                <p class="trend positive">
-                                    <i class="fas fa-arrow-up"></i> 12% from last month
-                                </p>
-                            </div>
-                        </div>
+        <!-- Active Leads Card -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Active Leads</h6>
+                        <h3 class="mb-0">{{ active_leads }}</h3>
                     </div>
-                    <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-success">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="stats-info">
-                                <h5>Converted Sales</h5>
-                                <h3>8</h3>
-                                <p class="trend positive">
-                                    <i class="fas fa-arrow-up"></i> 5% from last month
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-warning">
-                                <i class="fas fa-coins"></i>
-                            </div>
-                            <div class="stats-info">
-                                <h5>Commission Earned</h5>
-                                <h3>R 45,200</h3>
-                                <p class="trend positive">
-                                    <i class="fas fa-arrow-up"></i> 8% from last month
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stats-card">
-                            <div class="stats-icon bg-info">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="stats-info">
-                                <h5>Pending Leads</h5>
-                                <h3>12</h3>
-                                <p class="trend negative">
-                                    <i class="fas fa-arrow-down"></i> 3% from last month
-                                </p>
-                            </div>
-                        </div>
+                    <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                        <i class="fas fa-user-clock text-info fa-2x"></i>
                     </div>
                 </div>
-
-                <!-- Recent Activity -->
-                <div class="row mt-4">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Recent Leads</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="activity-list">
-                                    <!-- Activity Items -->
-                                    <div class="activity-item">
-                                        <div class="activity-icon bg-success">
-                                            <i class="fas fa-check"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6>New Lead Converted</h6>
-                                            <p>123 Main Street property successfully sold</p>
-                                            <small class="text-muted">2 hours ago</small>
-                                        </div>
-                                        <div class="activity-status">
-                                            <span class="badge bg-success">Completed</span>
-                                        </div>
-                                    </div>
-                                    <!-- More activity items... -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">Performance Overview</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="performanceChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+                <div class="mt-3">
+                    <span class="text-danger">
+                        <i class="fas fa-arrow-down me-1"></i>3%
+                    </span>
+                    <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{% static 'js/spotter-dashboard.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar Toggle
-    const sidebar = document.getElementById('sidebar');
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    const mainContent = document.querySelector('.main-content');
-
-    sidebarCollapse.addEventListener('click', function() {
-        sidebar.classList.toggle('collapsed');
-        // Store the state in localStorage
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-    });
-
-    // Restore sidebar state from localStorage
-    if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        sidebar.classList.add('collapsed');
-    }
-
-    // Handle navigation clicks
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Remove active class from all links
-            navLinks.forEach(l => l.classList.remove('active'));
-            // Add active class to clicked link
-            this.classList.add('active');
-
-            // Update page title
-            const pageTitle = document.querySelector('.page-title');
-            if (pageTitle) {
-                const linkText = this.querySelector('span')?.textContent || 'Dashboard';
-                pageTitle.textContent = linkText + ' Overview';
-            }
-
-            // On mobile, close sidebar after navigation
-            if (window.innerWidth <= 992) {
-                sidebar.classList.remove('show');
-            }
-        });
-    });
-
-    // Mobile sidebar toggle
-    if (window.innerWidth <= 992) {
-        document.addEventListener('click', function(e) {
-            if (!sidebar.contains(e.target) && !sidebarCollapse.contains(e.target)) {
-                sidebar.classList.remove('show');
-            }
-        });
-
-        sidebarCollapse.addEventListener('click', function(e) {
-            e.stopPropagation();
-            sidebar.classList.toggle('show');
-        });
-    }
-
-    // Performance Chart
-    const setupPerformanceChart = () => {
-        const ctx = document.getElementById('performanceChart');
-        if (ctx) {
-            return new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Leads',
-                        data: [12, 19, 15, 17, 14, 24],
-                        borderColor: '#1D4ED8',
-                        backgroundColor: 'rgba(29, 78, 216, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }, {
-                        label: 'Conversions',
-                        data: [4, 7, 5, 6, 5, 8],
-                        borderColor: '#10B981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
-        }
-    };
-
-    let performanceChart = setupPerformanceChart();
-
-    // Handle window resize for chart responsiveness
-    window.addEventListener('resize', function() {
-        if (performanceChart) {
-            performanceChart.destroy();
-            performanceChart = setupPerformanceChart();
-        }
-    });
-
-    // Notifications System
-    const setupNotifications = () => {
-        const notificationsBtn = document.querySelector('.notifications .nav-link');
-        if (notificationsBtn) {
-            const notifications = [
-                { title: 'New Lead', message: 'You have a new property lead', time: '2 mins ago' },
-                { title: 'Commission Paid', message: 'Commission for 123 Main St has been processed', time: '1 hour ago' },
-                { title: 'Lead Update', message: 'Status updated for 456 Park Ave lead', time: '3 hours ago' }
-            ];
-
-            // Create notifications dropdown
-            const createNotificationsDropdown = () => {
-                const dropdown = document.createElement('div');
-                dropdown.className = 'notifications-dropdown';
-                dropdown.innerHTML = `
-                    <div class="notifications-header">
-                        <h6>Notifications</h6>
-                        <button class="mark-all-read">Mark all as read</button>
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Revenue Chart -->
+        <div class="col-12 col-xl-8">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">Revenue Overview</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            This Month
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Last Week</a></li>
+                            <li><a class="dropdown-item" href="#">Last Month</a></li>
+                            <li><a class="dropdown-item" href="#">Last Quarter</a></li>
+                        </ul>
                     </div>
-                    <div class="notifications-list">
-                        ${notifications.map(notif => `
-                            <div class="notification-item">
-                                <div class="notification-icon">
-                                    <i class="fas fa-bell"></i>
-                                </div>
-                                <div class="notification-content">
-                                    <h6>${notif.title}</h6>
-                                    <p>${notif.message}</p>
-                                    <small>${notif.time}</small>
-                                </div>
+                </div>
+                <canvas id="revenueChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Lead Status Chart -->
+        <div class="col-12 col-xl-4">
+            <div class="glass-card p-4">
+                <h5 class="mb-4">Lead Status Distribution</h5>
+                <canvas id="leadStatusChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard and Recent Leads -->
+    <div class="row g-4">
+        <!-- Leaderboard -->
+        <div class="col-12 col-xl-4">
+            <div class="glass-card p-4">
+                <h5 class="mb-4">Top Performers</h5>
+                <div class="leaderboard">
+                    {% for spotter in top_spotters %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="position-relative">
+                            <div class="rounded-circle bg-light p-2">
+                                <i class="fas fa-user text-primary"></i>
                             </div>
-                        `).join('')}
+                            {% if forloop.counter == 1 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning">
+                                <i class="fas fa-crown"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">{{ spotter.name }}</h6>
+                            <small class="text-muted">{{ spotter.leads_count }} leads</small>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge bg-success">${{ spotter.revenue }}</span>
+                        </div>
                     </div>
-                    <div class="notifications-footer">
-                        <a href="#">View all notifications</a>
-                    </div>
-                `;
-                return dropdown;
-            };
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
-            let activeDropdown = null;
+        <!-- Recent Leads -->
+        <div class="col-12 col-xl-8">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">Recent Leads</h5>
+                    <a href="#" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lead in recent_leads %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-home text-primary me-2"></i>
+                                        {{ lead.property_address }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ lead.status_color }}">{{ lead.status }}</span>
+                                </td>
+                                <td>{{ lead.created_at|date:"M d, Y" }}</td>
+                                <td>${{ lead.value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            notificationsBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+<!-- Add Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
 
-                if (activeDropdown) {
-                    activeDropdown.remove();
-                    activeDropdown = null;
-                } else {
-                    activeDropdown = createNotificationsDropdown();
-                    this.parentNode.appendChild(activeDropdown);
+<script>
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Revenue',
+            data: [3200, 4100, 3800, 5200, 4800, 6000],
+            borderColor: '#4361ee',
+            tension: 0.3,
+            fill: true,
+            backgroundColor: 'rgba(67, 97, 238, 0.1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    display: false
                 }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (activeDropdown && !activeDropdown.contains(e.target)) {
-                    activeDropdown.remove();
-                    activeDropdown = null;
+            },
+            x: {
+                grid: {
+                    display: false
                 }
-            });
+            }
         }
-    };
-
-    setupNotifications();
-
-    // Stats Cards Animation
-    const statsCards = document.querySelectorAll('.stats-card');
-    statsCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
-            this.style.transition = 'all 0.3s ease';
-            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-        });
-
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-        });
-    });
-
-    // Activity Items Interaction
-    const activityItems = document.querySelectorAll('.activity-item');
-    activityItems.forEach(item => {
-        item.addEventListener('click', function() {
-            this.classList.add('activity-highlight');
-            setTimeout(() => {
-                this.classList.remove('activity-highlight');
-            }, 200);
-        });
-    });
-
-    // Button Loading States
-    const buttons = document.querySelectorAll('button:not(#sidebarCollapse)');
-    buttons.forEach(button => {
-        button.addEventListener('click', function() {
-            const originalContent = this.innerHTML;
-            if (!this.classList.contains('loading')) {
-                this.classList.add('loading');
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-                
-                // Simulate loading state
-                setTimeout(() => {
-                    this.classList.remove('loading');
-                    this.innerHTML = originalContent;
-                }, 1000);
-            }
-        });
-    });
-
-    // Initialize tooltips if using Bootstrap
-    if (typeof bootstrap !== 'undefined') {
-        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        tooltips.forEach(tooltip => {
-            new bootstrap.Tooltip(tooltip);
-        });
     }
-
-    // Handle form submissions with loading states
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const submitButton = this.querySelector('button[type="submit"]');
-            if (submitButton && !submitButton.classList.contains('loading')) {
-                submitButton.classList.add('loading');
-                submitButton.disabled = true;
-            }
-        });
-    });
 });
-    </script>
-</body>
-</html>
+
+// Lead Status Chart
+const statusCtx = document.getElementById('leadStatusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['New', 'In Progress', 'Converted', 'Lost'],
+        datasets: [{
+            data: [30, 25, 35, 10],
+            backgroundColor: [
+                '#4361ee',
+                '#ffd60a',
+                '#2ec4b6',
+                '#e63946'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.glass-card {
+    transition: transform 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+}
+
+.leaderboard .badge {
+    font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+    .glass-card {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}

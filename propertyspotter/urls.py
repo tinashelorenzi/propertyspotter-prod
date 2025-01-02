@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/properties/', include('properties.urls')),
     path('api/leads/', include('leads.urls')),
     path('api/agency/', include('agency_management.urls')),
+    path('api/commissions/', include('commissions.urls')),
     path('', include('app.urls')),
 ]
 

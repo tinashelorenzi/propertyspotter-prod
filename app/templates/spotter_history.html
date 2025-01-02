@@ -1,0 +1,264 @@
+{% extends "spotter_layout.html" %}
+{% load static %}
+
+{% block title %}Lead History - PropertySpotter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="glass-card p-4">
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Commission</h6>
+                            <h3 class="mb-0" id="totalCommission">$0</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-dollar-sign text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed Leads</h6>
+                            <h3 class="mb-0" id="completedLeads">0</h3>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-check-circle text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Average Commission</h6>
+                            <h3 class="mb-0" id="avgCommission">$0</h3>
+                        </div>
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-chart-line text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Completion Date</th>
+                        <th>Agent</th>
+                        <th>Property Value</th>
+                        <th>Commission</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- JS will populate this -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Lead Details Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-trophy me-2"></i>Completed Lead Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="detail-card">
+                            <h6><i class="fas fa-home me-2"></i>Property Details</h6>
+                            <ul class="property-details"></ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-card">
+                            <h6><i class="fas fa-user me-2"></i>Transaction Details</h6>
+                            <ul class="transaction-details"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.detail-card {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.detail-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.detail-card li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.commission-badge {
+    font-size: 1.1em;
+    padding: 0.5em 1em;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userID = '{{ request.session.userData.id }}';
+    fetchCompletedLeads(userID);
+});
+
+async function fetchCompletedLeads(userID) {
+    try {
+        // Fetch leads and commissions in parallel
+        const [leadsResponse, commissionsResponse] = await Promise.all([
+            fetch(`/api/leads/by-spotter/${userID}/`, {
+                headers: {
+                    'Authorization': 'Bearer {{ TOKEN }}',
+                    'Content-Type': 'application/json'
+                }
+            }),
+            fetch('/api/commissions/', {
+                headers: {
+                    'Authorization': 'Bearer {{ TOKEN }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+        ]);
+
+        const [leads, commissions] = await Promise.all([
+            leadsResponse.json(),
+            commissionsResponse.json()
+        ]);
+
+        // Create commission lookup by property ID
+        const commissionsByProperty = commissions.reduce((acc, commission) => {
+            acc[commission.property] = commission;
+            return acc;
+        }, {});
+
+        // Filter completed leads and add commission data
+        const completedLeads = leads.filter(lead => 
+            lead.status === 'Commission Paid' || 
+            lead.property.status === 'Commission Paid'
+        ).map(lead => ({
+            ...lead,
+            commission: commissionsByProperty[lead.property.id]
+        }));
+
+        renderHistoryTable(completedLeads);
+        updateSummaryStats(completedLeads);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
+
+function renderHistoryTable(leads) {
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = leads.map(lead => `
+        <tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-home text-success me-2"></i>
+                    <div>
+                        <div class="fw-bold">${lead.property.address}</div>
+                        <small class="text-muted">${lead.property.property_type}</small>
+                    </div>
+                </div>
+            </td>
+            <td>${new Date(lead.updated_at).toLocaleDateString()}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-user-tie me-2"></i>
+                    ${lead.assigned_agent.username}
+                </div>
+            </td>
+            <td>R${parseFloat(lead.property.price).toLocaleString()}</td>
+            <td>
+                <span class="badge bg-success commission-badge">
+                    R${lead.commission ? parseFloat(lead.commission.amount).toLocaleString() : '0'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-success" 
+                    data-lead='${JSON.stringify(lead).replace(/'/g, "&#39;")}' 
+                    onclick="showHistoryDetails(JSON.parse(this.dataset.lead))">
+                    <i class="fas fa-info-circle me-1"></i>Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateSummaryStats(leads) {
+    const totalCommission = leads.reduce((sum, lead) => 
+        sum + (lead.commission ? parseFloat(lead.commission.amount) : 0), 0);
+    const avgCommission = totalCommission / leads.length || 0;
+
+    document.getElementById('totalCommission').textContent = `R${totalCommission.toLocaleString()}`;
+    document.getElementById('completedLeads').textContent = leads.length;
+    document.getElementById('avgCommission').textContent = `R${avgCommission.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
+}
+
+function showHistoryDetails(lead) {
+    document.querySelector('.property-details').innerHTML = `
+        <li><strong>Address:</strong> ${lead.property.address}</li>
+        <li><strong>Type:</strong> ${lead.property.property_type}</li>
+        <li><strong>Bedrooms:</strong> ${lead.property.total_bedrooms}</li>
+        <li><strong>Bathrooms:</strong> ${lead.property.total_bathrooms}</li>
+        <li><strong>Owner:</strong> ${lead.property.owner_name}</li>
+    `;
+
+    document.querySelector('.transaction-details').innerHTML = `
+        <li><strong>Sale Price:</strong> $${parseFloat(lead.property.price).toLocaleString()}</li>
+        <li><strong>Commission:</strong> $${(lead.property.commission || 0).toLocaleString()}</li>
+        <li><strong>Agent:</strong> ${lead.assigned_agent.username}</li>
+        <li><strong>Agency:</strong> ${lead.assigned_agency.name}</li>
+        <li><strong>Completion Date:</strong> ${new Date(lead.updated_at).toLocaleDateString()}</li>
+    `;
+
+    new bootstrap.Modal(document.getElementById('historyModal')).show();
+}
+</script>
+{% endblock %}

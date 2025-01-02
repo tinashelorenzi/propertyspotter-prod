@@ -157,6 +157,11 @@
     </div>
 
     <script>
+        function setCookie(name, value, days) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000)); // set expiration time
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; Secure; HttpOnly; SameSite=Strict`;
+    }
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             if (passwordInput.type === 'password') {
@@ -200,8 +205,9 @@
 
                 // Store tokens
                 alert('Login successful');
-                localStorage.setItem('accessToken', data.token);
-                localStorage.setItem('refreshToken', data.refresh_token);
+                setCookie('accessToken', data.token, 1);
+                setCookie('refreshToken', data.refresh_token, 7);
+                alert('Cookies set');
                 
                 let sessionResponse = await fetch('/sessionSave/', {
                     method: 'POST',

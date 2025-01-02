@@ -1,0 +1,310 @@
+{% extends "spotter_layout.html" %}
+{% load static %}
+
+{% block title %}My Leads - PropertySpotter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="glass-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="mb-0">
+                <i class="fas fa-clipboard-list me-2"></i>My Leads
+            </h4>
+            <a href="#" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Lead
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Potential</th>
+                        <th>Agent</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTableBody">
+                    <!-- JS will populate this -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Lead Details Modal -->
+<div class="modal fade" id="leadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lead Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Property Images Carousel -->
+                <div id="propertyImagesCarousel" class="carousel slide mb-4">
+                    <div class="carousel-inner">
+                        <!-- JS will populate this -->
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+                </div>
+
+                <!-- Property Details -->
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="detail-card">
+                            <h6><i class="fas fa-home me-2"></i>Property Details</h6>
+                            <ul class="property-details">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-card">
+                            <h6><i class="fas fa-user me-2"></i>Owner Details</h6>
+                            <ul class="owner-details">
+                                <!-- JS will populate this -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lead Progress Timeline -->
+                <div class="lead-timeline mt-4">
+                    <h6><i class="fas fa-clock me-2"></i>Lead Progress</h6>
+                    <div class="timeline">
+                        <!-- JS will populate this -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-card {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 10px;
+    padding: 1rem;
+    height: 100%;
+}
+
+.detail-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.detail-card li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.detail-card li:last-child {
+    border-bottom: none;
+}
+
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4361ee;
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 12px;
+    bottom: -24px;
+    width: 2px;
+    background: rgba(67, 97, 238, 0.3);
+}
+
+.timeline-item:last-child::after {
+    display: none;
+}
+
+.carousel {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userID = '{{ request.session.userData.id }}';
+    fetchLeads(userID);
+});
+
+async function fetchLeads(userID) {
+    try {
+	token = fetch('/token');
+        const response = await fetch(`/api/leads/by-spotter/${userID}/`,
+		{
+			headers: {
+                'Authorization': 'Bearer {{ TOKEN }}',
+                'Content-Type': 'application/json'
+            }
+		}
+	);
+        const leads = await response.json();
+	console.log(leads);
+        renderLeadsTable(leads);
+    } catch (error) {
+        console.error('Error fetching leads:', error);
+    }
+}
+
+function renderLeadsTable(leads) {
+    const tbody = document.getElementById('leadsTableBody');
+    tbody.innerHTML = leads.map(lead => `
+        <tr>
+            <td>
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-home text-primary me-2"></i>
+                    <div>
+                        <div class="fw-bold">${lead.property.address}</div>
+                        <small class="text-muted">${lead.property.property_type}</small>
+                    </div>
+                </div>
+            </td>
+            <td>${new Date(lead.created_at).toLocaleDateString()}</td>
+            <td>
+                <span class="badge ${getStatusBadgeClass(lead.status)}">
+                    ${lead.status}
+                </span>
+            </td>
+            <td>
+                <span class="badge ${getPotentialBadgeClass(lead.potential)}">
+                    ${lead.potential}
+                </span>
+            </td>
+            <td>
+                ${lead.assigned_agent ? 
+                    `<div class="d-flex align-items-center">
+                        <i class="fas fa-user-tie me-2"></i>
+                        ${lead.assigned_agent.username}
+                    </div>` : 
+                    '<span class="text-muted">Unassigned</span>'
+                }
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" 
+                    data-lead='${JSON.stringify(lead).replace(/'/g, "&#39;")}' 
+                    onclick="showLeadDetails(JSON.parse(this.dataset.lead))">
+                    <i class="fas fa-eye me-1"></i>View
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showLeadDetails(lead) {
+    // Populate images carousel
+    const carouselInner = document.querySelector('.carousel-inner');
+    carouselInner.innerHTML = lead.property.property_images.map((img, index) => `
+        <div class="carousel-item ${index === 0 ? 'active' : ''}">
+            <img src="${img.image}" class="d-block w-100" alt="Property Image">
+        </div>
+    `).join('');
+
+    // Populate property details
+    document.querySelector('.property-details').innerHTML = `
+        <li><strong>Address:</strong> ${lead.property.address}</li>
+        <li><strong>Type:</strong> ${lead.property.property_type}</li>
+        <li><strong>Price:</strong> $${lead.property.price}</li>
+        <li><strong>Bedrooms:</strong> ${lead.property.total_bedrooms}</li>
+        <li><strong>Bathrooms:</strong> ${lead.property.total_bathrooms}</li>
+    `;
+
+    // Populate owner details
+    document.querySelector('.owner-details').innerHTML = `
+        <li><strong>Name:</strong> ${lead.property.owner_name}</li>
+        <li><strong>Contact:</strong> ${lead.property.owner_contact}</li>
+        <li><strong>Source:</strong> ${lead.source || 'N/A'}</li>
+        <li><strong>Notes:</strong> ${lead.notes || 'N/A'}</li>
+    `;
+
+    // Populate timeline
+    const timeline = document.querySelector('.timeline');
+    const timelineItems = [
+        { date: lead.created_at, event: 'Lead Created', icon: 'plus' },
+        lead.pushed_to_agency_at && { 
+            date: lead.pushed_to_agency_at, 
+            event: `Pushed to ${lead.assigned_agency.name}`,
+            icon: 'building'
+        },
+        lead.assigned_to_agent_at && {
+            date: lead.assigned_to_agent_at,
+            event: `Assigned to ${lead.assigned_agent.username}`,
+            icon: 'user-tie'
+        }
+    ].filter(Boolean);
+
+    timeline.innerHTML = timelineItems.map(item => `
+        <div class="timeline-item">
+            <i class="fas fa-${item.icon} me-2"></i>
+            <strong>${new Date(item.date).toLocaleDateString()}</strong>
+            <div>${item.event}</div>
+        </div>
+    `).join('');
+
+    // Show modal
+    new bootstrap.Modal(document.getElementById('leadModal')).show();
+}
+
+function getStatusBadgeClass(status) {
+    const classes = {
+        'New Submission': 'bg-primary',
+        'Unsuccessful': 'bg-danger',
+        'Pending Mandate': 'bg-warning',
+        'Already Listed': 'bg-info',
+        'Listed': 'bg-success',
+        'Sold': 'bg-dark',
+        'Spotter Commission Paid': 'bg-success',
+        'Owner Not Found': 'bg-secondary',
+        'Other Sole Mandate': 'bg-info'
+    };
+    return classes[status] || 'bg-secondary';
+}
+
+function getPotentialBadgeClass(potential) {
+    const classes = {
+        'Hot': 'bg-danger',
+        'Warm': 'bg-warning',
+        'Cold': 'bg-info'
+    };
+    return classes[potential] || 'bg-secondary';
+}
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ def securedRoute(view_func):
         # Check if the session contains the 'loggedIn' key and it is True
         if not request.session.get('loggedIn', False):
             # If not logged in, redirect to the login page
-            return redirect('login')  # Change 'login' to the actual URL name for your login view
+            return redirect('/login')  # Change 'login' to the actual URL name for your login view
 
         # If logged in, proceed with the view
         return view_func(request, *args, **kwargs)

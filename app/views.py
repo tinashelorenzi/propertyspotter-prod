@@ -20,6 +20,14 @@ def login_view(request):
 def dashboard(request):
 	return render(request, 'spotter_dashboard.html')
 
+@securedRoute
+def myLeads(request):
+    return render(request, 'spotter_leads.html')
+
+@securedRoute
+def myHistory(request):
+    return render(request, 'spotter_history.html')
+
 @csrf_exempt
 def sessionSave(request):
     print(json.loads(request.body))
@@ -62,3 +70,10 @@ def sessionSave(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+def token(request):
+    return JsonResponse({'token': request.session.get('access_token')})
+
+def logout(request):
+    request.session.flush()
+    return redirect('/')

@@ -154,7 +154,7 @@
             <div class="user-dropdown dropdown">
                 <button class="dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
                     <i class="fas fa-user-circle me-2"></i>
-                    <span>{{ request.user.username }}</span>
+                    <span>{{ USERDATA.first_name }} {{ USERDATA.last_name }}</span>
                 </button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="#">

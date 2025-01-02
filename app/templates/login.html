@@ -180,7 +180,7 @@
             form.classList.add('loading');
 
             try {
-                const response = await fetch('/api/login/', {
+                let response = await fetch('/api/users/login/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -199,9 +199,28 @@
                 }
 
                 // Store tokens
+                alert('Login successful');
                 localStorage.setItem('accessToken', data.token);
                 localStorage.setItem('refreshToken', data.refresh_token);
                 
+                let sessionResponse = await fetch('/sessionSave/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(
+                        {
+                            'accessToken': data.token,
+                            'refreshToken': data.refresh_token,
+                            'userData': data.user
+                        }
+                    )
+                });
+
+                if (!sessionResponse.ok) {
+                    throw new Error(data.error || 'Session save failed');
+                }
                 // Redirect to dashboard
                 window.location.href = '/dashboard/';
                 

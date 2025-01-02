@@ -128,6 +128,15 @@ REST_FRAMEWORK = {
     )
 }
 
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # 24-hour lifespan for access tokens
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Optional: Set refresh token lifespan
+    'ROTATE_REFRESH_TOKENS': True,               # Optional: Enable refresh token rotation
+    'BLACKLIST_AFTER_ROTATION': True,            # Optional: Blacklist old tokens after rotation
+}
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 

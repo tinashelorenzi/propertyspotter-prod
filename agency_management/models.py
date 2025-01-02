@@ -11,7 +11,7 @@ User = get_user_model()  # Using CustomUser defined earlier
 
 # Agency Model
 class Agency(models.Model):
-    id = models.UUIDField(primary_key=True, default=models.UUIDField, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
@@ -25,7 +25,7 @@ class Agency(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='agency_principal'
+        related_name='Agency_Admin'
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

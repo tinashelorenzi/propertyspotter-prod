@@ -22,7 +22,7 @@ class AgencyAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'principal_user':
-            kwargs["queryset"] = CustomUser.objects.filter(role='Master Agent')  # Filter Master Agents
+            kwargs["queryset"] = CustomUser.objects.filter(role='Agency_Admin')  # Filter Master Agents
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 admin.site.register(Agent, AgentAdmin)

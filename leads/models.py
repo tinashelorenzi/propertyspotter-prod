@@ -23,7 +23,7 @@ class Lead(models.Model):
         max_length=10, choices=LeadPotential.choices, default=LeadPotential.COLD
     )
     assigned_agency = models.ForeignKey(
-        'users.Agency',
+        'agency_management.Agency',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

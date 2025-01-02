@@ -25,6 +25,11 @@ class PropertyStatus(models.TextChoices):
     OWNER_NOT_FOUND = 'Owner Not Found', 'Owner Not Found'
     OTHER_SOLE_MANDATE = 'Other Sole Mandate', 'Other Sole Mandate'
 
+class PropertyImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    property = models.ForeignKey('Property', related_name='property_images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='uploads/properties/images/')
+    created_at = models.DateTimeField(auto_now_add=True)
 
 # Property Model
 class Property(models.Model):
@@ -62,7 +67,6 @@ class Property(models.Model):
 
     # Images
     featured_image = models.ImageField(upload_to='uploads/properties/featured_images/', null=True, blank=True)
-    images = models.JSONField(default=list)  # Stores a list of URLs for property images
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -71,6 +75,10 @@ class Property(models.Model):
     # Notes
     spotter_notes = models.TextField(null=True, blank=True)
     agent_notes = models.TextField(null=True, blank=True)
+
+    @property
+    def image_urls(self):
+        return [img.image.url for img in self.property_images.all()]
 
     def __str__(self):
         return f"{self.property_type} - {self.address or 'No Address'}"

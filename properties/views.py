@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from users.authentication import BodyTokenAuthentication
 from .models import Property
 from .serializers import PropertySerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 def check_property_access(user, property_obj=None):
     """Check if user has access to property based on their role"""
@@ -17,32 +18,17 @@ def check_property_access(user, property_obj=None):
         return True
     return False
 
-@api_view(['POST'])
-@authentication_classes([BodyTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@api_view(['GET'])
+@permission_classes([])
 def list_properties(request):
-    """List properties with role-based filtering"""
-    user = request.user
-    
-    # Filter properties based on user role
-    if user.role == 'Admin':
-        properties = Property.objects.all()
-    elif user.role == 'Agency_Admin':
-        properties = Property.objects.filter(spotter__agency=user.agency)
-    elif user.role == 'Agent':
-        properties = Property.objects.filter(spotter__agency=user.agency)
-    elif user.role == 'Spotter':
-        properties = Property.objects.filter(spotter=user)
-    else:
-        return Response(
-            {"error": "Insufficient permissions"}, 
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    # Apply additional filters if provided
+    # Get any user filters from request
     property_type = request.data.get('property_type')
     status_filter = request.data.get('status')
     
+    # Start with all properties
+    properties = Property.objects.all()
+    
+    # Apply filters if provided
     if property_type:
         properties = properties.filter(property_type=property_type)
     if status_filter:

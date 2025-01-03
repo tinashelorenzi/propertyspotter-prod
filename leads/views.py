@@ -2,8 +2,10 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 from .models import Lead
-from .serializers import LeadSerializer
+from .serializers import LeadSerializer, LeadSerializerAPI
+from properties.models import Property
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -49,21 +51,35 @@ def assign_to_agent(request, lead_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_lead(request):
-   # Check if property_id is provided
-   property_id = request.data.get('property_id')
-   if not property_id:
-       return Response({'error': 'property_id is required'}, status=400)
+   try:
+       # Get property instance
+       property_id = request.data.get('property')
+       print(f"Attempting to find property with ID: {property_id}")
+       property_instance = Property.objects.get(id=property_id)
+       print(f"Property found: {property_instance}")
 
-   # Create lead data with the requesting user as spotter
-   lead_data = {
-       'property_id': property_id,
-       'spotter': request.user.id,
-       'source': request.data.get('source'),
-       'notes': request.data.get('notes')
-   }
+       lead_data = {
+           'spotter': request.user.id,
+           'property': property_id,
+           'source': request.data.get('source'),
+           'notes': request.data.get('notes'),
+           'status': 'New Submission'
+           # potential will be auto-determined in save() method
+       }
 
-   serializer = LeadSerializer(data=lead_data)
-   if serializer.is_valid():
-       serializer.save()
-       return Response(serializer.data, status=201)
-   return Response(serializer.errors, status=400)
+       print(f"Lead data: {lead_data}")
+
+       serializer = LeadSerializerAPI(data=lead_data)
+       if serializer.is_valid():
+           print("Serializer is valid")
+           lead = serializer.save()
+           print(f"Lead saved: {lead}")
+           return Response(serializer.data, status=status.HTTP_201_CREATED)
+       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       
+   except Property.DoesNotExist:
+       print("Property not found")
+       return Response({'error': 'Property not found'}, status=status.HTTP_404_NOT_FOUND)
+   except Exception as e:
+       print(e)
+       return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

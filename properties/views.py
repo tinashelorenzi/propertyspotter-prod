@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import PermissionDenied
 from users.authentication import BodyTokenAuthentication
-from .models import Property
-from .serializers import PropertySerializer
+from .models import Property, PropertyImage
+from .serializers import PropertySerializer, PropertyImageSerializer, PropertySerializerAPI
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 def check_property_access(user, property_obj=None):
@@ -66,24 +66,42 @@ def get_property(request):
         )
 
 @api_view(['POST'])
-@authentication_classes([BodyTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def create_property(request):
-    """Create a new property"""
-    if request.user.role not in ['Spotter', 'Agent', 'Admin', 'Agency_Admin']:
-        return Response(
-            {"error": "You don't have permission to create properties"}, 
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    # Set spotter to current user if not specified
-    data = request.data.copy()
-    if not data.get('spotter_id'):
-        data['spotter_id'] = request.user.id
-        
-    serializer = PropertySerializer(data=data)
+    # Handle form data and files
+    property_data = {
+        'spotter': request.user.id,
+        'property_type': request.POST.get('property_type'),
+        'owner_name': request.POST.get('owner_name'),
+        'owner_contact': request.POST.get('owner_contact'),
+        'lead_source': request.POST.get('lead_source'),
+        'price': request.POST.get('price'),
+        'reference_name': request.POST.get('reference_name'),
+        'reference_details': request.POST.get('reference_details'),
+        'total_bedrooms': request.POST.get('total_bedrooms'),
+        'total_bathrooms': request.POST.get('total_bathrooms'),
+        'address': request.POST.get('address'),
+        'spotter_notes': request.POST.get('spotter_notes')
+    }
+
+    serializer = PropertySerializerAPI(data=property_data)
     if serializer.is_valid():
-        serializer.save()
+        property_instance = serializer.save()
+
+        # Handle featured image
+        if 'featured_image' in request.FILES:
+            property_instance.featured_image = request.FILES['featured_image']
+            property_instance.save()
+
+        # Handle additional property images
+        if 'property_images[]' in request.FILES:
+            images = request.FILES.getlist('property_images[]')
+            for image in images:
+                PropertyImage.objects.create(
+                    property=property_instance,
+                    image=image
+                )
+        print(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

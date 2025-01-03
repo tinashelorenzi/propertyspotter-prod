@@ -3,3 +3,4 @@ venv/
 .env
 frontend/uploads/*
 media/uploads/properties/*
+media/uploads/*

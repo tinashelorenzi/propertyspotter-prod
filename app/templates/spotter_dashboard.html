@@ -20,9 +20,6 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>12%
-                    </span>
                     <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
@@ -41,9 +38,6 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>5%
-                    </span>
                     <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
@@ -55,16 +49,13 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-muted mb-2">Revenue</h6>
-                        <h3 class="mb-0">${{ revenue }}</h3>
+                        <h3 class="mb-0">R{{ revenue }}</h3>
                     </div>
                     <div class="rounded-circle bg-warning bg-opacity-10 p-3">
                         <i class="fas fa-dollar-sign text-warning fa-2x"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>8%
-                    </span>
                     <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
@@ -83,9 +74,6 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-danger">
-                        <i class="fas fa-arrow-down me-1"></i>3%
-                    </span>
                     <span class="text-muted ms-2">Since last month</span>
                 </div>
             </div>
@@ -160,7 +148,7 @@
             <div class="glass-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0">Recent Leads</h5>
-                    <a href="#" class="btn btn-sm btn-primary">View All</a>
+                    <a href="/leads" class="btn btn-sm btn-primary">View All</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -205,10 +193,10 @@ const revenueCtx = document.getElementById('revenueChart').getContext('2d');
 new Chart(revenueCtx, {
     type: 'line',
     data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: {{ revenue_data.months|safe }},
         datasets: [{
             label: 'Revenue',
-            data: [3200, 4100, 3800, 5200, 4800, 6000],
+            data: {{ revenue_data.values|safe }},
             borderColor: '#4361ee',
             tension: 0.3,
             fill: true,

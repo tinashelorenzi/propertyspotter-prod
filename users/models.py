@@ -34,6 +34,10 @@ class Agency(models.Model):
     def __str__(self):
         return self.name
 
+def user_profile_path(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'uploads/profile_images/{uuid.uuid4()}.{ext}'
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [(role.value, role.label) for role in Role]
 
@@ -71,6 +75,16 @@ class CustomUser(AbstractUser):
     last_login = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     profile_complete = models.BooleanField(default=False)
+    profile_image = models.ImageField(
+        upload_to=user_profile_path,
+        null=True,
+        blank=True
+    )
+    profile_image_url = models.URLField(null=True, blank=True)
+    def save(self, *args, **kwargs):
+        if self.profile_image:
+            self.profile_image_url = self.profile_image.url
+        super().save(*args, **kwargs)
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(
         'self',

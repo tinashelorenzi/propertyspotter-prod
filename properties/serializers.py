@@ -23,3 +23,11 @@ class PropertySerializer(serializers.ModelSerializer):
            'spotter_notes', 'agent_notes'
        ]
        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class PropertySerializerAPI(serializers.ModelSerializer):
+    property_images = PropertyImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Property
+        fields = '__all__'
+        read_only_fields = ['status']

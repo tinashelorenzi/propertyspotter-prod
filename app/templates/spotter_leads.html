@@ -10,7 +10,7 @@
             <h4 class="mb-0">
                 <i class="fas fa-clipboard-list me-2"></i>My Leads
             </h4>
-            <a href="#" class="btn btn-primary">
+            <a href="/newLead" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>New Lead
             </a>
         </div>
@@ -161,24 +161,47 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const userID = '{{ request.session.userData.id }}';
-    fetchLeads(userID);
+document.addEventListener('DOMContentLoaded', async function () {
+    try {
+        const userID = '{{ request.session.userData.id }}';
+        const token = await fetchToken(); // Fetch token before proceeding
+        if (token) {
+            fetchLeads(userID, token); // Pass token to fetchLeads
+        }
+    } catch (error) {
+        console.error("Error initializing application:", error);
+    }
 });
 
-async function fetchLeads(userID) {
+async function fetchToken() {
     try {
-	token = fetch('/token');
-        const response = await fetch(`/api/leads/by-spotter/${userID}/`,
-		{
-			headers: {
-                'Authorization': 'Bearer {{ TOKEN }}',
+        const response = await fetch('/token/');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const token = data.token;
+        console.log(token); // Log the token for debugging
+        return token; // Return the token for further use
+    } catch (error) {
+        console.error("Error fetching token:", error);
+        return null; // Return null if the token fetch fails
+    }
+}
+
+async function fetchLeads(userID, token) {
+    try {
+        const response = await fetch(`/api/leads/by-spotter/${userID}/`, {
+            headers: {
+                'Authorization': `Bearer ${token}`, // Use token in Authorization header
                 'Content-Type': 'application/json'
             }
-		}
-	);
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const leads = await response.json();
-	console.log(leads);
+        console.log(leads);
         renderLeadsTable(leads);
     } catch (error) {
         console.error('Error fetching leads:', error);
@@ -230,7 +253,6 @@ function renderLeadsTable(leads) {
 }
 
 function showLeadDetails(lead) {
-    // Populate images carousel
     const carouselInner = document.querySelector('.carousel-inner');
     carouselInner.innerHTML = lead.property.property_images.map((img, index) => `
         <div class="carousel-item ${index === 0 ? 'active' : ''}">
@@ -238,7 +260,6 @@ function showLeadDetails(lead) {
         </div>
     `).join('');
 
-    // Populate property details
     document.querySelector('.property-details').innerHTML = `
         <li><strong>Address:</strong> ${lead.property.address}</li>
         <li><strong>Type:</strong> ${lead.property.property_type}</li>
@@ -247,7 +268,6 @@ function showLeadDetails(lead) {
         <li><strong>Bathrooms:</strong> ${lead.property.total_bathrooms}</li>
     `;
 
-    // Populate owner details
     document.querySelector('.owner-details').innerHTML = `
         <li><strong>Name:</strong> ${lead.property.owner_name}</li>
         <li><strong>Contact:</strong> ${lead.property.owner_contact}</li>
@@ -255,7 +275,6 @@ function showLeadDetails(lead) {
         <li><strong>Notes:</strong> ${lead.notes || 'N/A'}</li>
     `;
 
-    // Populate timeline
     const timeline = document.querySelector('.timeline');
     const timelineItems = [
         { date: lead.created_at, event: 'Lead Created', icon: 'plus' },
@@ -279,7 +298,6 @@ function showLeadDetails(lead) {
         </div>
     `).join('');
 
-    // Show modal
     new bootstrap.Modal(document.getElementById('leadModal')).show();
 }
 
@@ -307,4 +325,5 @@ function getPotentialBadgeClass(potential) {
     return classes[potential] || 'bg-secondary';
 }
 </script>
+
 {% endblock %}

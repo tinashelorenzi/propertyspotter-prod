@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import Lead
-from properties.serializers import PropertySerializer
+from properties.serializers import PropertySerializerAPI, PropertySerializer
 from users.serializers import UserSerializer, AgencySerializer
+from agency_management.serializers import AgencySerializer
 
 class LeadSerializer(serializers.ModelSerializer):
     spotter = UserSerializer(read_only=True)
@@ -21,4 +22,17 @@ class LeadSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'potential',
                            'pushed_to_agency_at', 'assigned_to_agent_at']
 
+class LeadSerializerAPI(serializers.ModelSerializer):
+    class Meta:
+        model = Lead
+        fields = '__all__'
+        read_only_fields = ['potential']
+
+    def create(self, validated_data):
+        try:
+            lead = Lead.objects.create(**validated_data)
+            return lead
+        except Exception as e:
+            print(f"Error in serializer create: {e}")
+            raise serializers.ValidationError(str(e))
 

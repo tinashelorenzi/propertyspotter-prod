@@ -12,4 +12,5 @@ urlpatterns = [
 	    path('newLead/', views.newLead, name='newLead'),
 	    path('sessionSave/', views.sessionSave, name='sessionSave'),
 	    path('logout/', views.logout, name='logout'),
+	    path('token/', views.token, name='token'),
 ]

@@ -204,10 +204,8 @@
                 }
 
                 // Store tokens
-                alert('Login successful');
                 setCookie('accessToken', data.token, 1);
                 setCookie('refreshToken', data.refresh_token, 7);
-                alert('Cookies set');
                 
                 let sessionResponse = await fetch('/sessionSave/', {
                     method: 'POST',

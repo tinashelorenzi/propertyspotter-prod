@@ -5,7 +5,7 @@ urlpatterns = [
     path('', views.list_users, name='list-users'),  # GET all users
     path('<uuid:pk>/', views.get_user, name='get-user'),  # GET single user
     path('create/', views.create_user, name='create-user'),  # POST new user
-    path('<uuid:pk>/update/', views.update_user, name='update-user'),  # PATCH update user
+    path('update/', views.update_profile, name='update_profile'),
     path('<uuid:pk>/delete/', views.delete_user, name='delete-user'),  # DELETE user
 
     # Authentication routes

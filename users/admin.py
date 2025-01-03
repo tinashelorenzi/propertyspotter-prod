@@ -14,7 +14,7 @@ class CustomUserAdmin(UserAdmin):
     # The following fields are used to manage the user creation form
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'phone')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'phone', 'profile_image', 'profile_image_url')}),
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'created_at')}),  # These will be read-only
         ('Agency', {'fields': ('agency',)}),

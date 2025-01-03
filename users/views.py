@@ -179,50 +179,55 @@ def create_user(request):
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PATCH'])
-def update_user(request, pk):
-    # Try extracting the token from the Authorization header
-    token = request.headers.get('Authorization')
+# views.py
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+   try:
+       user = request.user
+       form_data = request.data
 
-    if not token:
-        return Response(
-            {"error": "Authentication token is required."},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+       # Password validation
+       if form_data.get('new_password'):
+           if not user.check_password(form_data.get('old_password', '')):
+               return Response({
+                   'status': 'error',
+                   'message': 'Current password is incorrect'
+               }, status=400)
+           
+           if form_data.get('new_password') != form_data.get('confirm_password'):
+               return Response({
+                   'status': 'error',
+                   'message': 'New passwords do not match'
+               }, status=400)
 
-    # If the token is provided with the 'Bearer ' prefix, remove it
-    if token.startswith('Bearer '):
-        token = token[7:]
+           # Update password
+           user.set_password(form_data['new_password'])
 
-    # Authenticate the token
-    jwt_auth = JWTAuthentication()
-    try:
-        validated_token = jwt_auth.get_validated_token(token)
-        user = jwt_auth.get_user(validated_token)
-    except Exception:
-        return Response(
-            {"error": "Invalid or expired token."},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+       # Update basic info
+       allowed_fields = ['first_name', 'last_name', 'phone']
+       for field in allowed_fields:
+           if field in form_data:
+               setattr(user, field, form_data[field])
 
-    # Fetch the user to be updated
-    user_to_update = get_object_or_404(CustomUser, pk=pk)
+       # Handle profile image
+       if 'profile_image' in request.FILES:
+           user.profile_image = request.FILES['profile_image']
 
-    # Check if the authenticated user has permission to update (optional)
-    if not user.is_staff and user.id != user_to_update.id:
-        return Response(
-            {"error": "You do not have permission to update this user."},
-            status=status.HTTP_403_FORBIDDEN
-        )
+       user.save()
 
-    # Partially update the user using the serializer
-    serializer = UserSerializer(user_to_update, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+       return Response({
+           'status': 'success',
+           'message': 'Profile updated successfully'
+       })
 
-    # Return validation errors if any
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   except Exception as e:
+       return Response({
+           'status': 'error',
+           'message': str(e)
+       }, status=400)
+
+
 
 @api_view(['DELETE'])
 def delete_user(request, pk):

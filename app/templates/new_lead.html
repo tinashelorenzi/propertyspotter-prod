@@ -6,6 +6,20 @@
 {% block content %}
 <div class="container-fluid">
     <div class="glass-card p-4">
+	<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
         <div class="row">
             <!-- Progress Steps -->
             <div class="col-md-3">
@@ -46,7 +60,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Price</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">R</span>
                                     <input type="number" class="form-control" name="price" required>
                                 </div>
                             </div>
@@ -289,10 +303,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             // First create the property
-            const propertyResponse = await fetch('/api/properties/new', {
+            const propertyResponse = await fetch('/api/properties/create/', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer {{ token }}'
+                    'Authorization': 'Bearer {{ TOKEN }}'
                 },
                 body: formData
             });
@@ -302,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const propertyData = await propertyResponse.json();
+	    console.log(propertyData.id);
 
             // Now create the lead
             const leadData = {
@@ -311,10 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 potential: 'Hot'
             };
 
-            const leadResponse = await fetch('/api/leads/new', {
+            const leadResponse = await fetch('/api/leads/new/', {
                 method: 'POST',
                 headers: {
-                    'Authorization': 'Bearer {{ token }}',
+                    'Authorization': 'Bearer {{ TOKEN }}',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(leadData)
@@ -324,13 +339,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Failed to create lead');
             }
 
-            // Success
-            alert('Lead created successfully!');
-            window.location.href = '/my-leads';
+            // Show success message in modal
+	    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+	    const modalEl = document.getElementById('alertModal');
+	    modalEl.querySelector('.modal-title').textContent = 'Success';
+	    modalEl.querySelector('.modal-body').textContent = 'Lead created successfully!';
+	    modalEl.querySelector('.modal-header').className = 'modal-header bg-success text-white';
+	    modal.show();
+            window.location.href = '/myLeads';
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error creating lead: ' + error.message);
+	    // Show error message in modal
+	    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+	    const modalEl = document.getElementById('alertModal');
+	    modalEl.querySelector('.modal-title').textContent = 'Error';
+	    modalEl.querySelector('.modal-body').textContent = 'Error creating lead: ' + error.message;
+	    modalEl.querySelector('.modal-header').className = 'modal-header bg-danger text-white';
+	    modal.show();
         }
     });
 });

@@ -1,0 +1,338 @@
+{% extends "spotter_layout.html" %}
+{% load static %}
+
+{% block title %}New Lead - PropertySpotter{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="glass-card p-4">
+        <div class="row">
+            <!-- Progress Steps -->
+            <div class="col-md-3">
+                <div class="steps">
+                    <div class="step-item active" data-step="1">
+                        <div class="step-circle">1</div>
+                        <div class="step-text">Property Details</div>
+                    </div>
+                    <div class="step-item" data-step="2">
+                        <div class="step-circle">2</div>
+                        <div class="step-text">Owner Information</div>
+                    </div>
+                    <div class="step-item" data-step="3">
+                        <div class="step-circle">3</div>
+                        <div class="step-text">Images & Notes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="col-md-9">
+                <form id="newLeadForm" class="needs-validation" novalidate>
+                    <!-- Step 1: Property Details -->
+                    <div class="form-step active" id="step1">
+                        <h4 class="mb-4">Property Details</h4>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Property Type</label>
+                                <select class="form-select" name="property_type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="House">House</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="Land">Land</option>
+                                    <option value="Commercial">Commercial</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" name="price" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Total Bedrooms</label>
+                                <input type="number" class="form-control" name="total_bedrooms" min="0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Total Bathrooms</label>
+                                <input type="number" class="form-control" name="total_bathrooms" min="0" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="address" rows="3" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Owner Information -->
+                    <div class="form-step" id="step2">
+                        <h4 class="mb-4">Owner Information</h4>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Owner Name</label>
+                                <input type="text" class="form-control" name="owner_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Owner Contact</label>
+                                <input type="tel" class="form-control" name="owner_contact" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Lead Source</label>
+                                <input type="text" class="form-control" name="lead_source">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reference Name</label>
+                                <input type="text" class="form-control" name="reference_name">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Reference Details</label>
+                                <textarea class="form-control" name="reference_details" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Images & Notes -->
+                    <div class="form-step" id="step3">
+                        <h4 class="mb-4">Images & Notes</h4>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Featured Image</label>
+                                <input type="file" class="form-control" name="featured_image" accept="image/*">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Additional Property Images</label>
+                                <div id="imageContainer">
+                                    <div class="input-group mb-3">
+                                        <input type="file" class="form-control" name="property_images[]" accept="image/*">
+                                        <button type="button" class="btn btn-outline-danger remove-image">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addImage">
+                                    <i class="fas fa-plus me-2"></i>Add Another Image
+                                </button>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Spotter Notes</label>
+                                <textarea class="form-control" name="spotter_notes" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">
+                            <i class="fas fa-arrow-left me-2"></i>Previous
+                        </button>
+                        <button type="button" class="btn btn-primary" id="nextBtn">
+                            Next<i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                            <i class="fas fa-check me-2"></i>Submit Lead
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+}
+
+.steps {
+    position: relative;
+    padding: 20px 0;
+}
+
+.step-item {
+    position: relative;
+    padding: 20px 0;
+    padding-left: 50px;
+    margin-bottom: 20px;
+}
+
+.step-item::after {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 50px;
+    bottom: -20px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.step-item:last-child::after {
+    display: none;
+}
+
+.step-circle {
+    position: absolute;
+    left: 0;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.step-item.active .step-circle {
+    background: #4361ee;
+    color: white;
+}
+
+.step-item.completed .step-circle {
+    background: #28a745;
+    color: white;
+}
+
+.step-text {
+    margin-left: 10px;
+    font-weight: 500;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const form = document.getElementById('newLeadForm');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Handle image additions
+    document.getElementById('addImage').addEventListener('click', function() {
+        const container = document.getElementById('imageContainer');
+        const newInput = document.createElement('div');
+        newInput.className = 'input-group mb-3';
+        newInput.innerHTML = `
+            <input type="file" class="form-control" name="property_images[]" accept="image/*">
+            <button type="button" class="btn btn-outline-danger remove-image">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        container.appendChild(newInput);
+    });
+
+    // Handle image removals
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-image') || 
+            e.target.parentElement.classList.contains('remove-image')) {
+            const inputGroup = e.target.closest('.input-group');
+            inputGroup.remove();
+        }
+    });
+
+    // Navigation functions
+    function showStep(step) {
+        document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step${step}`).classList.add('active');
+        
+        document.querySelectorAll('.step-item').forEach(el => {
+            el.classList.remove('active', 'completed');
+            if (parseInt(el.dataset.step) === step) {
+                el.classList.add('active');
+            } else if (parseInt(el.dataset.step) < step) {
+                el.classList.add('completed');
+            }
+        });
+
+        prevBtn.style.display = step === 1 ? 'none' : 'block';
+        if (step === 3) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'block';
+        } else {
+            nextBtn.style.display = 'block';
+            submitBtn.style.display = 'none';
+        }
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (currentStep < 3) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        try {
+            // First create the property
+            const propertyResponse = await fetch('/api/properties/new', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer {{ token }}'
+                },
+                body: formData
+            });
+
+            if (!propertyResponse.ok) {
+                throw new Error('Failed to create property');
+            }
+
+            const propertyData = await propertyResponse.json();
+
+            // Now create the lead
+            const leadData = {
+                property: propertyData.id,
+                source: formData.get('lead_source'),
+                notes: formData.get('spotter_notes'),
+                potential: 'Hot'
+            };
+
+            const leadResponse = await fetch('/api/leads/new', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer {{ token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(leadData)
+            });
+
+            if (!leadResponse.ok) {
+                throw new Error('Failed to create lead');
+            }
+
+            // Success
+            alert('Lead created successfully!');
+            window.location.href = '/my-leads';
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error creating lead: ' + error.message);
+        }
+    });
+});
+</script>
+{% endblock %}

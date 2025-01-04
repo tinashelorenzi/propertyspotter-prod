@@ -173,7 +173,7 @@
                                     <span class="badge bg-{{ lead.status_color }}">{{ lead.status }}</span>
                                 </td>
                                 <td>{{ lead.created_at|date:"M d, Y" }}</td>
-                                <td>${{ lead.value }}</td>
+                                <td>R{{ lead.value }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

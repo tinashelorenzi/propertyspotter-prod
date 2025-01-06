@@ -96,6 +96,35 @@
                             <label class="form-label">Confirm New Password</label>
                             <input type="password" class="form-control" name="confirm_password" id="confirmPassword">
                         </div>
+                        <div class="col-12">
+    <hr>
+    <h5 class="mb-3">Banking Details</h5>
+</div>
+<div class="col-md-6">
+    <label class="form-label">Bank Name</label>
+    <input type="text" class="form-control" name="bank_name" value="{{ USERDATA.bank_name }}" required>
+</div>
+<div class="col-md-6">
+    <label class="form-label">Branch Code</label>
+    <input type="text" class="form-control" name="bank_branch_code" value="{{ USERDATA.bank_branch_code }}" required>
+</div>
+<div class="col-md-6">
+    <label class="form-label">Account Number</label>
+    <input type="text" class="form-control" name="account_number" value="{{ USERDATA.account_number }}" required>
+</div>
+<div class="col-md-6">
+    <label class="form-label">Account Name</label>
+    <input type="text" class="form-control" name="account_name" value="{{ USERDATA.account_name }}" required>
+</div>
+<div class="col-md-6">
+    <label class="form-label">Account Type</label>
+    <select class="form-select" name="account_type" required>
+        <option value="" disabled>Select account type...</option>
+        <option value="Savings" {% if USERDATA.account_type == 'Savings' %}selected{% endif %}>Savings</option>
+        <option value="Cheque" {% if USERDATA.account_type == 'Cheque' %}selected{% endif %}>Cheque</option>
+        <option value="Current" {% if USERDATA.account_type == 'Current' %}selected{% endif %}>Current</option>
+    </select>
+</div>
                     </div>
 
                     <div class="mt-4">

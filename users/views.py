@@ -183,49 +183,75 @@ def create_user(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
-   try:
-       user = request.user
-       form_data = request.data
+    try:
+        user = request.user
+        form_data = request.data
 
-       # Password validation
-       if form_data.get('new_password'):
-           if not user.check_password(form_data.get('old_password', '')):
-               return Response({
-                   'status': 'error',
-                   'message': 'Current password is incorrect'
-               }, status=400)
-           
-           if form_data.get('new_password') != form_data.get('confirm_password'):
-               return Response({
-                   'status': 'error',
-                   'message': 'New passwords do not match'
-               }, status=400)
+        # Password validation
+        if form_data.get('new_password'):
+            if not user.check_password(form_data.get('old_password', '')):
+                return Response({
+                    'status': 'error',
+                    'message': 'Current password is incorrect'
+                }, status=400)
+            
+            if form_data.get('new_password') != form_data.get('confirm_password'):
+                return Response({
+                    'status': 'error',
+                    'message': 'New passwords do not match'
+                }, status=400)
+            # Update password
+            user.set_password(form_data['new_password'])
 
-           # Update password
-           user.set_password(form_data['new_password'])
+        # Update basic info
+        allowed_fields = [
+            'first_name', 'last_name', 'phone',
+            'bank_name', 'bank_branch_code', 'account_number',
+            'account_name', 'account_type'
+        ]
 
-       # Update basic info
-       allowed_fields = ['first_name', 'last_name', 'phone']
-       for field in allowed_fields:
-           if field in form_data:
-               setattr(user, field, form_data[field])
+        # Split validation by field type
+        # Basic info validation
+        if user.role == 'Spotter' and any(
+            not form_data.get(f) for f in [
+                'bank_name', 'bank_branch_code', 'account_number',
+                'account_name', 'account_type'
+            ]
+        ):
+            return Response({
+                'status': 'error',
+                'message': 'All banking fields are required for Spotters'
+            }, status=400)
 
-       # Handle profile image
-       if 'profile_image' in request.FILES:
-           user.profile_image = request.FILES['profile_image']
+        # Update all allowed fields
+        for field in allowed_fields:
+            if field in form_data:
+                setattr(user, field, form_data[field])
 
-       user.save()
+        # Handle profile image
+        if 'profile_image' in request.FILES:
+            user.profile_image = request.FILES['profile_image']
+            
+        # Mark profile as complete if all required fields are filled
+        if user.role == 'Spotter':
+            user.profile_complete = all([
+                user.first_name, user.last_name, user.phone,
+                user.bank_name, user.bank_branch_code,
+                user.account_number, user.account_name, user.account_type
+            ])
 
-       return Response({
-           'status': 'success',
-           'message': 'Profile updated successfully'
-       })
+        user.save()
+        
+        return Response({
+            'status': 'success',
+            'message': 'Profile updated successfully'
+        })
 
-   except Exception as e:
-       return Response({
-           'status': 'error',
-           'message': str(e)
-       }, status=400)
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
 
 
 

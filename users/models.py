@@ -93,6 +93,12 @@ class CustomUser(AbstractUser):
         blank=True,
         related_name='approved_users'
     )
+    #Banking details
+    bank_name = models.CharField(max_length=255, null=True, blank=True)
+    bank_branch_code = models.CharField(max_length=255, null=True, blank=True)
+    account_number = models.CharField(max_length=255, null=True, blank=True)
+    account_name = models.CharField(max_length=255, null=True, blank=True)
+    account_type = models.CharField(max_length=255, null=True, blank=True)
 
     REQUIRED_FIELDS = ['email']
 

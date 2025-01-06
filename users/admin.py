@@ -18,6 +18,7 @@ class CustomUserAdmin(UserAdmin):
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'created_at')}),  # These will be read-only
         ('Agency', {'fields': ('agency',)}),
+        ('Banking Information',{'fields':('bank_name', 'account_number', 'bank_branch_code', 'account_type', 'account_name')})
     )
    
     add_fieldsets = (

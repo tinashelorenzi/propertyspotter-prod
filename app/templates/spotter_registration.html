@@ -1,0 +1,278 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Spotter Registration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #00A3E0;
+            --dark-blue: #003B5C;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .logo {
+            max-width: 300px;
+            margin-bottom: 2rem;
+        }
+        
+        .registration-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding: 0 40px;
+        }
+        
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active {
+            background-color: var(--primary-blue);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .step.completed {
+            background-color: var(--dark-blue);
+            color: white;
+        }
+        
+        .step-connector {
+            flex-grow: 1;
+            height: 3px;
+            background-color: #e9ecef;
+            margin: 19px 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .form-step {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .form-step.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+            padding: 10px 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--dark-blue);
+            border-color: var(--dark-blue);
+            transform: translateY(-2px);
+        }
+        
+        .form-label {
+            color: var(--dark-blue);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1.5px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 0.25rem rgba(0, 163, 224, 0.25);
+        }
+        
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .profile-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 1rem auto;
+            overflow: hidden;
+            border: 3px solid var(--primary-blue);
+        }
+        
+        .profile-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-header {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container registration-container">
+        <div class="text-center">
+            <img src="{% static 'images/logo.png' %}" alt="Property Spotter Logo" class="logo">
+            <h2 class="mb-4" style="color: var(--dark-blue);">Spotter Registration</h2>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step active" data-step="1">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step" data-step="2">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step" data-step="3">
+                <i class="fas fa-camera"></i>
+            </div>
+        </div>
+
+        <form id="registrationForm" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Step 1: Account Information -->
+            <div class="form-step active" id="step1">
+                <h4 class="mb-4">Account Information</h4>
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username*</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                    <div class="invalid-feedback">Please choose a username.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address*</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                    <div class="invalid-feedback">Please enter a valid email address.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password*</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="invalid-feedback">Password must be at least 8 characters long.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirm Password*</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    <div class="invalid-feedback">Passwords do not match.</div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary next-step">Next <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 2: Personal Information -->
+            <div class="form-step" id="step2">
+                <h4 class="mb-4">Personal Information</h4>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="first_name" class="form-label">First Name*</label>
+                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        <div class="invalid-feedback">Please enter your first name.</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="last_name" class="form-label">Last Name*</label>
+                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        <div class="invalid-feedback">Please enter your last name.</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone Number*</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                    <div class="invalid-feedback">Please enter a valid phone number.</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary prev-step"><i class="fas fa-arrow-left me-2"></i> Previous</button>
+                    <button type="button" class="btn btn-primary next-step">Next <i class="fas fa-arrow-right ms-2"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 3: Profile Photo -->
+            <div class="form-step" id="step3">
+                <h4 class="mb-4">Profile Photo</h4>
+                <div class="text-center">
+                    <div class="profile-preview mb-3">
+                        <img id="photoPreview" src="{% static 'images/default-avatar.png' %}" alt="Profile Preview">
+                    </div>
+                    <div class="mb-3">
+                        <label for="profile_image" class="form-label">Upload Photo (Optional)</label>
+                        <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                        <div class="form-text">Maximum file size: 5MB. Supported formats: JPG, PNG</div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary prev-step"><i class="fas fa-arrow-left me-2"></i> Previous</button>
+                    <button type="submit" class="btn btn-primary">Complete Registration <i class="fas fa-check ms-2"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5>Processing Registration</h5>
+                    <p class="text-muted mb-0">Please wait while we create your account...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registration Successful!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                    <p>Thank you for registering with Property Spotter! Please check your email for confirmation and further instructions.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/spotter-registration.js' %}"></script>
+</body>
+</html>

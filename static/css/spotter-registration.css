@@ -1,0 +1,231 @@
+
+    /* Custom Properties */
+    :root {
+        --primary-color: #2563eb;        /* Royal Blue */
+        --primary-dark: #1d4ed8;         /* Darker Blue */
+        --secondary-color: #64748b;      /* Slate Gray */
+        --success-color: #22c55e;        /* Green */
+        --background-color: #f8fafc;     /* Light Gray */
+        --text-primary: #1e293b;         /* Dark Blue Gray */
+        --text-secondary: #64748b;       /* Medium Gray */
+        --border-color: #e2e8f0;         /* Light Gray */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Global Styles */
+    body {
+        background-color: var(--background-color);
+        color: var(--text-primary);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Card Styling */
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        transition: transform 0.3s ease;
+    }
+
+    @media (min-width: 992px) {
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    }
+
+    /* Progress Steps */
+    .progress {
+        height: 3px !important;
+        background-color: var(--border-color);
+    }
+
+    .progress-bar {
+        background-color: var(--primary-color);
+        transition: width 0.5s ease-in-out;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .step-circle.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    .step-circle.completed {
+        background: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+    }
+
+    /* Form Controls */
+    .form-control, .form-select {
+        border: 1.5px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .input-group-text {
+        background-color: white;
+        border: 1.5px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .input-group .form-control {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .input-group .input-group-text {
+        border-right: none;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-outline-secondary {
+        color: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    /* Profile Image Upload */
+    .avatar-preview {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 2px dashed var(--border-color);
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-preview:hover {
+        border-color: var(--primary-color);
+    }
+
+    .avatar-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Modal Styling */
+    .modal-content {
+        border: none;
+        border-radius: 16px;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            font-size: 0.875rem;
+        }
+
+        .small {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* Step Content Animation */
+    .step-content {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.4s ease-out;
+    }
+
+    .step-content.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Form Validation Styles */
+    .form-control.is-invalid {
+        border-color: #dc3545;
+        background-image: none;
+        padding-right: 1rem;
+    }
+
+    .invalid-feedback {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        color: #dc3545;
+    }
+
+    /* Loading Spinner Animation */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spinner-border {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Success Check Animation */
+    @keyframes scaleIn {
+        0% { transform: scale(0); }
+        100% { transform: scale(1); }
+    }
+
+    .fa-check-circle {
+        animation: scaleIn 0.3s ease-out;
+    }

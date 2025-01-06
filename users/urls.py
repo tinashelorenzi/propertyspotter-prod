@@ -15,4 +15,8 @@ urlpatterns = [
 
     # Render view routes
     path('dashboard/login/', views.login_view, name='loginview'),  # Render login page
+
+    #Registration routes
+    path('register/', views.register_user, name='register_user'),
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email')
 ]

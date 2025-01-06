@@ -7,11 +7,18 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from .models import CustomUser, Agency
+from .models import CustomUser, Agency, VerificationToken
 from .authentication import BodyTokenAuthentication
 from .serializers import UserSerializer
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.hashers import make_password
+from mailer.models import EmailTemplate
+from django.utils.crypto import get_random_string
+from django.template.loader import render_to_string
 import jwt
 from django.conf import settings
+import uuid
 #Render
 from django.shortcuts import render
 
@@ -294,3 +301,193 @@ def delete_user(request, pk):
         {"message": "User successfully deleted."},
         status=status.HTTP_204_NO_CONTENT
     )
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    try:
+        data = request.data
+        print("Received registration data:", data)
+
+        # Basic validation
+        required_fields = ['username', 'email', 'password', 'first_name', 'last_name']
+        for field in required_fields:
+            if not data.get(field):
+                print(f"Validation failed: {field} is missing")
+                return Response(
+                    {'error': f'{field} is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Check if username or email already exists
+        if CustomUser.objects.filter(username=data['username']).exists():
+            print(f"Username {data['username']} already exists")
+            return Response(
+                {'error': 'Username already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if CustomUser.objects.filter(email=data['email']).exists():
+            print(f"Email {data['email']} already exists")
+            return Response(
+                {'error': 'Email already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("Creating user instance...")
+        try:
+            # Create user instance
+            user = CustomUser(
+                username=data['username'],
+                email=data['email'],
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                role='Spotter',
+                is_active=False,
+                profile_complete=False
+            )
+            
+            user.password = make_password(data['password'])
+            
+            if 'profile_image' in request.FILES:
+                print("Processing profile image...")
+                user.profile_image = request.FILES['profile_image']
+            
+            if 'phone' in data:
+                user.phone = data['phone']
+            
+            user.save()
+            print(f"User created successfully with ID: {user.id}")
+        except Exception as user_error:
+            print(f"Error creating user: {str(user_error)}")
+            raise Exception(f"Failed to create user: {str(user_error)}")
+
+        print("Creating verification token...")
+        try:
+            # Create verification token
+            token = VerificationToken.objects.create(
+                user=user,
+                token=str(uuid.uuid4()),
+                expires_at=timezone.now() + timedelta(hours=24)
+            )
+            print(f"Token created: {token.token}")
+        except Exception as token_error:
+            print(f"Error creating token: {str(token_error)}")
+            # Clean up: delete user if token creation fails
+            user.delete()
+            raise Exception(f"Failed to create verification token: {str(token_error)}")
+
+        print("Preparing email context...")
+        try:
+            verification_context = {
+                'user': user,
+                'verification_url': f"{settings.SITE_URL}/verify-email/{token.token}",
+                'site_url': settings.SITE_URL
+            }
+            print("Email context:", verification_context)
+            
+            # First try to render the template separately
+            print("Attempting to render template...")
+            try:
+                rendered_content = render_to_string(
+                    'mail_templates/verification_email.html',
+                    verification_context
+                )
+                print("Template rendered successfully")
+            except Exception as template_error:
+                print(f"Template rendering error: {str(template_error)}")
+                raise Exception(f"Failed to render email template: {str(template_error)}")
+
+            print("Getting or creating EmailTemplate...")
+            email_template, created = EmailTemplate.objects.get_or_create(
+                name='verification_email',
+                defaults={
+                    'subject': 'Verify Your Email - Property Spotter',
+                    'html_content': rendered_content
+                }
+            )
+            """
+            print("Creating EmailTemplate...")
+            email_template = EmailTemplate.objects.create(
+                name='verification_email',
+                subject='Verify Your Email - Property Spotter',
+                html_content=rendered_content
+            )
+            """
+            print("EmailTemplate created successfully")
+
+            print("Sending email...")
+            email_template.send_email(
+                to_email=user.email,
+                context_data=verification_context
+            )
+            print("Email sent successfully")
+
+        except Exception as email_error:
+            print(f"Error in email process: {str(email_error)}")
+            # Clean up: delete user and token if email fails
+            token.delete()
+            user.delete()
+            raise Exception(f"Failed to send verification email: {str(email_error)}")
+
+        print("Registration process completed successfully")
+        return Response({
+            'message': 'Registration successful. Please check your email for verification.',
+            'user_id': user.id
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        print(f"Final error catch: {str(e)}")
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def verify_email(request, token):
+    try:
+        # Get token object
+        verification = VerificationToken.objects.filter(
+            token=token,
+            used=False,
+            expires_at__gt=timezone.now()
+        ).first()
+
+        if not verification:
+            return Response({
+                'error': 'Invalid or expired verification token'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Activate user
+        user = verification.user
+        user.is_active = True
+        user.save()
+
+        # Mark token as used
+        verification.used = True
+        verification.save()
+
+        # Send welcome email
+        welcome_context = {
+            'user': user,
+            'dashboard_url': f"{settings.SITE_URL}/dashboard",
+            'site_url': settings.SITE_URL
+        }
+        
+        EmailTemplate.objects.create(
+            name='welcome_email',
+            subject='Welcome to Property Spotter',
+            html_content=render_to_string(
+                'mail_templates/welcome_email.html',
+                welcome_context
+            )
+        ).send_email(to_email=user.email, context_data=welcome_context)
+
+        return Response({
+            'message': 'Email verified successfully. You can now log in.'
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

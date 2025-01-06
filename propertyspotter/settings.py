@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'admin_dashboard',
     'rest_framework_simplejwt',
     'app',
+    'mailer',
 ]
 
 MIDDLEWARE = [
@@ -167,3 +168,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST').strip()  # strip to remove any whitespace
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))  # ensure port is an integer
+EMAIL_USE_TLS = True  # enable TLS
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER').strip()
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL').strip()
+
+SITE_URL = os.getenv('WEBURL')

@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth import get_user_model
@@ -16,6 +17,10 @@ def index(request):
 
 def login_view(request):
     return render(request, 'login.html')
+
+@csrf_exempt
+def spotter_register(request):
+    return render(request, 'spotter_registration.html')
 
 def dashboard(request):
     base_url = request.build_absolute_uri('/')[:-1]

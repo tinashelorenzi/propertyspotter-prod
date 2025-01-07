@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Agency
+from .models import CustomUser, Agency, VerificationToken
 
 # Custom User Admin to manage CustomUser model with custom fields
 class CustomUserAdmin(UserAdmin):
@@ -45,6 +45,50 @@ class AgencyAdmin(admin.ModelAdmin):
         ('Additional Info', {'fields': ('address', 'is_active', 'license_valid_until')}),
         ('Master User', {'fields': ('master_user',)}),
         ('Important dates', {'fields': ('created_at',)}),
+    )
+
+@admin.register(VerificationToken)
+class VerificationTokenAdmin(admin.ModelAdmin):
+    list_display = ('token', 'user', 'created_at', 'expires_at', 'used', 'get_user_email')
+    list_filter = ('used', 'created_at', 'expires_at')
+    search_fields = ('token', 'user__email', 'user__username')
+    readonly_fields = ('id', 'created_at')
+    raw_id_fields = ('user',)
+    ordering = ('-created_at',)
+    
+    def get_user_email(self, obj):
+        return obj.user.email
+    get_user_email.short_description = 'User Email'
+    
+    # Add helpful actions for token management
+    actions = ['mark_as_used', 'mark_as_unused', 'extend_expiration']
+
+    def mark_as_used(self, request, queryset):
+        updated = queryset.update(used=True)
+        self.message_user(request, f'{updated} tokens marked as used.')
+    mark_as_used.short_description = "Mark selected tokens as used"
+
+    def mark_as_unused(self, request, queryset):
+        updated = queryset.update(used=False)
+        self.message_user(request, f'{updated} tokens marked as unused.')
+    mark_as_unused.short_description = "Mark selected tokens as unused"
+
+    def extend_expiration(self, request, queryset):
+        from django.utils import timezone
+        from datetime import timedelta
+        # Extend by 24 hours from now
+        updated = queryset.update(expires_at=timezone.now() + timedelta(hours=24))
+        self.message_user(request, f'Extended expiration for {updated} tokens.')
+    extend_expiration.short_description = "Extend expiration by 24 hours"
+
+    # Customize the admin display
+    fieldsets = (
+        ('Token Information', {
+            'fields': ('id', 'token', 'user')
+        }),
+        ('Status', {
+            'fields': ('used', 'created_at', 'expires_at')
+        }),
     )
 
 admin.site.register(Agency, AgencyAdmin)

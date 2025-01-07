@@ -20,7 +20,7 @@ import jwt
 from django.conf import settings
 import uuid
 #Render
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 User = get_user_model()
 
@@ -362,33 +362,38 @@ def register_user(request):
             print(f"Error creating user: {str(user_error)}")
             raise Exception(f"Failed to create user: {str(user_error)}")
 
-        print("Creating verification token...")
+        print("Generating verification token...")
         try:
-            # Create verification token
+            # Generate the token string first
+            verification_token = str(uuid.uuid4())
+            print(f"Generated token: {verification_token}")
+            
+            # Create verification token record
             token = VerificationToken.objects.create(
                 user=user,
-                token=str(uuid.uuid4()),
+                token=verification_token,
                 expires_at=timezone.now() + timedelta(hours=24)
             )
-            print(f"Token created: {token.token}")
+            print(f"Token saved to database successfully")
         except Exception as token_error:
             print(f"Error creating token: {str(token_error)}")
             # Clean up: delete user if token creation fails
             user.delete()
             raise Exception(f"Failed to create verification token: {str(token_error)}")
 
-        print("Preparing email context...")
+        print("Preparing email verification...")
         try:
+            # Prepare verification context
             verification_context = {
                 'user': user,
-                'verification_url': f"{settings.SITE_URL}/verify-email/{token.token}",
+                'verification_url': f"{settings.SITE_URL}/api/users/verify-email/{verification_token}/",
                 'site_url': settings.SITE_URL
             }
-            print("Email context:", verification_context)
+            print(f"Email context prepared with URL: {verification_context['verification_url']}")
             
-            # First try to render the template separately
-            print("Attempting to render template...")
+            # Render template content
             try:
+                print("Rendering email template...")
                 rendered_content = render_to_string(
                     'mail_templates/verification_email.html',
                     verification_context
@@ -398,30 +403,28 @@ def register_user(request):
                 print(f"Template rendering error: {str(template_error)}")
                 raise Exception(f"Failed to render email template: {str(template_error)}")
 
-            print("Getting or creating EmailTemplate...")
-            email_template, created = EmailTemplate.objects.get_or_create(
-                name='verification_email',
-                defaults={
-                    'subject': 'Verify Your Email - Property Spotter',
-                    'html_content': rendered_content
-                }
-            )
-            """
-            print("Creating EmailTemplate...")
-            email_template = EmailTemplate.objects.create(
-                name='verification_email',
-                subject='Verify Your Email - Property Spotter',
-                html_content=rendered_content
-            )
-            """
-            print("EmailTemplate created successfully")
+            # Get or update email template
+            print("Preparing email template...")
+            email_template = EmailTemplate.objects.filter(name='verification_email').first()
+            
+            if email_template:
+                print("Updating existing email template with new content")
+                email_template.html_content = rendered_content
+                email_template.save()
+            else:
+                print("Creating new email template")
+                email_template = EmailTemplate.objects.create(
+                    name='verification_email',
+                    subject='Verify Your Email - Property Spotter',
+                    html_content=rendered_content
+                )
 
-            print("Sending email...")
+            print("Sending verification email...")
             email_template.send_email(
                 to_email=user.email,
                 context_data=verification_context
             )
-            print("Email sent successfully")
+            print("Verification email sent successfully")
 
         except Exception as email_error:
             print(f"Error in email process: {str(email_error)}")
@@ -446,48 +449,118 @@ def register_user(request):
 @permission_classes([AllowAny])
 def verify_email(request, token):
     try:
-        # Get token object
+        print("\n=== Starting Email Verification Process ===")
+        print(f"Received verification request for token: {token}")
+        
+        # Debug: Print request information
+        print("\nRequest Details:")
+        print(f"Method: {request.method}")
+        print(f"Path: {request.path}")
+        print(f"Full URL: {request.build_absolute_uri()}")
+        
+        # Debug: Check all tokens in database
+        print("\nDatabase Token Check:")
+        all_tokens = VerificationToken.objects.all()
+        print(f"Total tokens in database: {all_tokens.count()}")
+        for t in all_tokens:
+            print(f"Token: {t.token}, Used: {t.used}, User: {t.user.email}")
+        
+        # Debug: Try to find the specific token
+        print(f"\nLooking for token: {token}")
         verification = VerificationToken.objects.filter(
             token=token,
-            used=False,
-            expires_at__gt=timezone.now()
+            used=False
         ).first()
-
+        
+        print(f"Verification token found: {verification is not None}")
+        
         if not verification:
-            return Response({
-                'error': 'Invalid or expired verification token'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            # Debug: Check why token wasn't found
+            existing_token = VerificationToken.objects.filter(token=token).first()
+            if existing_token:
+                print("Token exists but might be used already")
+                print(f"Token status - Used: {existing_token.used}")
+                return Response({
+                    'error': 'This verification link has already been used',
+                    'redirect_url': f"{settings.SITE_URL}/login"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                print("Token not found in database at all")
+                return Response({
+                    'error': 'Invalid verification token'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Activate user
+        # Debug: User activation
+        print("\nActivating user account:")
         user = verification.user
+        print(f"User before activation - Email: {user.email}, Active: {user.is_active}")
+        
         user.is_active = True
         user.save()
+        
+        print(f"User after activation - Email: {user.email}, Active: {user.is_active}")
 
-        # Mark token as used
+        # Debug: Mark token as used
+        print("\nUpdating token status:")
         verification.used = True
         verification.save()
+        print("Token marked as used")
 
         # Send welcome email
+        print("\nPreparing welcome email:")
         welcome_context = {
             'user': user,
             'dashboard_url': f"{settings.SITE_URL}/dashboard",
             'site_url': settings.SITE_URL
         }
-        
-        EmailTemplate.objects.create(
-            name='welcome_email',
-            subject='Welcome to Property Spotter',
-            html_content=render_to_string(
-                'mail_templates/welcome_email.html',
-                welcome_context
+        print("Welcome email context prepared")
+       
+        try:
+            print("Attempting to send welcome email...")
+            # Get or create welcome email template
+            welcome_template, created = EmailTemplate.objects.get_or_create(
+                name='welcome_email',
+                defaults={
+                    'subject': 'Welcome to Property Spotter',
+                    'html_content': render_to_string(
+                        'mail_templates/welcome_email.html',
+                        welcome_context
+                    )
+                }
             )
-        ).send_email(to_email=user.email, context_data=welcome_context)
+            print(f"Welcome template {'created' if created else 'retrieved'}")
+           
+            # Send welcome email
+            welcome_template.send_email(
+                to_email=user.email,
+                context_data=welcome_context
+            )
+            print("Welcome email sent successfully")
+            
+        except Exception as email_error:
+            print(f"Warning: Welcome email could not be sent: {str(email_error)}")
+            print(f"Detailed error: {email_error.__class__.__name__}")
+            # Continue with verification even if welcome email fails
+            pass
 
+        print("\n=== Email Verification Process Completed Successfully ===")
+        
+        # Return response with redirect URL
+        return redirect(f"{settings.SITE_URL}/login")
         return Response({
-            'message': 'Email verified successfully. You can now log in.'
+            'message': 'Email verified successfully',
+            'redirect_url': f"{settings.SITE_URL}/login"
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
+        print("\n=== Email Verification Process Failed ===")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print("Full error details:", e)
+        import traceback
+        print("\nTraceback:")
+        print(traceback.format_exc())
+        
         return Response({
-            'error': str(e)
+            'error': 'Verification failed. Please try again.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

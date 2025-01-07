@@ -80,7 +80,7 @@ class CustomUser(AbstractUser):
         null=True,
         blank=True
     )
-    profile_image_url = models.URLField(null=True, blank=True)
+    profile_image_url = models.CharField(null=True, blank=True, max_length=255)
     def save(self, *args, **kwargs):
         if self.profile_image:
             self.profile_image_url = self.profile_image.url

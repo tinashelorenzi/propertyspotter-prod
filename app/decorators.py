@@ -4,8 +4,11 @@ from functools import wraps
 def securedRoute(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
+        print('Using decorator')
+        #Display all sessions
+        print(request.session)
         # Check if the session contains the 'loggedIn' key and it is True
-        if not request.session.get('loggedIn', False):
+        if not request.session.get('loggedIn'):
             # If not logged in, redirect to the login page
             return redirect('/login')  # Change 'login' to the actual URL name for your login view
 
@@ -13,3 +16,4 @@ def securedRoute(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view
+

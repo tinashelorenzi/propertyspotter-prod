@@ -9,6 +9,7 @@ from .decorators import securedRoute
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import json, requests
+from collections import defaultdict
 CustomUser = get_user_model()
 # Create your views here.
 
@@ -22,6 +23,7 @@ def login_view(request):
 def spotter_register(request):
     return render(request, 'spotter_registration.html')
 
+@securedRoute
 def dashboard(request):
     base_url = request.build_absolute_uri('/')[:-1]
     user_id = request.session.get('userData', {}).get('id')
@@ -91,7 +93,25 @@ def dashboard(request):
         'status_data': status_data
     }
     
-    return render(request, 'spotter_dashboard.html', context)
+    #render the relevent template based on user role
+    print("Role: " + request.session.get('userData', {}).get('role'))
+    if request.session.get('userData', {}).get('role') == 'Spotter':
+        print("Rendering spotter dashboard")
+        return render(request, 'spotter_dashboard.html', context)
+    elif request.session.get('userData', {}).get('role') == 'Agency_Admin':
+        print("Rendering agency dashboard")
+        #Add the session login for the agencyData here
+        agency_response = requests.get(f'{base_url}/api/agency/get-agency-by-admin/{user_id}/',headers={'Authorization': f'Bearer {request.session.get("access_token")}'})
+        if agency_response.ok:
+            agency_data = agency_response.json()
+            request.session['agencyData'] = agency_data
+            print("Agency data stored in session:", agency_data)
+        else:
+            print("Failed to fetch agency data:", agency_response.status_code, agency_response.text)
+        return redirect('/agency')
+    else:
+        print("Rendering admin dashboard")
+        return render(request, 'admin_dashboard.html', context)
 
 def get_status_color(status):
     colors = {
@@ -169,3 +189,132 @@ def token(request):
 def logout(request):
     request.session.flush()
     return redirect('/')
+
+# Agency Dashboard Routes
+@securedRoute
+def agency_dashboard(request):
+    base_url = request.build_absolute_uri('/')[:-1]
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
+
+    if not agency_data:
+        return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # Fetch all leads for the agency
+        leads_response = requests.get(
+            f'{base_url}/api/leads/by-agency/{agency_data["id"]}/',
+            headers=headers
+        )
+        leads = leads_response.json() if leads_response.ok else []
+
+        # Calculate total sales (sum of all completed leads' property values)
+        total_sales = sum(
+            float(lead['property']['price']) 
+            for lead in leads 
+            if lead['status'] == 'Commission Paid' and lead['property'].get('price')
+        )
+
+        # Count active leads (not completed or unsuccessful)
+        active_leads_count = sum(
+            1 for lead in leads 
+            if lead['status'] not in ['Commission Paid', 'Unsuccessful', 'Cancelled']
+        )
+
+        # Count new lead submissions
+        new_leads_count = sum(
+            1 for lead in leads 
+            if lead['status'] == 'New_Submission'
+        )
+
+        # Get recent leads (last 5) and prepare them for display
+        recent_leads = sorted(
+            leads, 
+            key=lambda x: x['created_at'], 
+            reverse=True
+        )[:5]
+
+        # Calculate monthly stats for charts
+        now = datetime.now()
+        monthly_sales = defaultdict(float)
+        monthly_leads = defaultdict(lambda: {'new': 0, 'converted': 0})
+
+        # Process last 6 months of data
+        for i in range(5, -1, -1):  # Going backward from 5 to 0
+            month = (now - relativedelta(months=i)).strftime('%b')
+            monthly_sales[month] = 0
+            monthly_leads[month] = {'new': 0, 'converted': 0}
+
+        # Calculate monthly sales and leads data
+        for lead in leads:
+            created_date = datetime.strptime(
+                lead['created_at'].split('.')[0], 
+                '%Y-%m-%dT%H:%M:%S'
+            )
+            month = created_date.strftime('%b')
+
+            # Only process data from the last 6 months
+            if month in monthly_sales:
+                if lead['status'] == 'Commission Paid':
+                    try:
+                        monthly_sales[month] += float(lead['property']['price'])
+                    except (KeyError, ValueError, TypeError):
+                        continue
+
+                if lead['status'] == 'New_Submission':
+                    monthly_leads[month]['new'] += 1
+                elif lead['status'] == 'Commission Paid':
+                    monthly_leads[month]['converted'] += 1
+
+        # Convert dictionaries to lists for the charts
+        sales_chart_data = {
+            'labels': list(monthly_sales.keys()),
+            'values': list(monthly_sales.values())
+        }
+
+        leads_chart_data = {
+            'labels': list(monthly_leads.keys()),
+            'new_leads': [data['new'] for data in monthly_leads.values()],
+            'converted_leads': [data['converted'] for data in monthly_leads.values()]
+        }
+
+        # Calculate trends
+        current_month = now.strftime('%b')
+        last_month = (now - relativedelta(months=1)).strftime('%b')
+        
+        sales_trend = calculate_trend(
+            monthly_sales[current_month],
+            monthly_sales[last_month]
+        )
+        
+        leads_trend = calculate_trend(
+            monthly_leads[current_month]['new'],
+            monthly_leads[last_month]['new']
+        )
+
+        # Prepare the context
+        context = {
+            'agency': agency_data,
+            'total_sales': total_sales,
+            'active_leads_count': active_leads_count,
+            'new_leads_count': new_leads_count,
+            'recent_leads': recent_leads,
+            'sales_chart_data': sales_chart_data,
+            'leads_chart_data': leads_chart_data,
+            'sales_trend': sales_trend,
+            'leads_trend': leads_trend
+        }
+
+        return render(request, 'agency_dashboard.html', context)
+
+    except Exception as e:
+        print(f"Error in agency dashboard: {str(e)}")
+        return redirect('login')
+
+def calculate_trend(current_value, previous_value):
+    """Calculate percentage change between two values"""
+    if previous_value == 0:
+        return 0
+    return ((current_value - previous_value) / previous_value) * 100

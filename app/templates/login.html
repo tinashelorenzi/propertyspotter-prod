@@ -225,7 +225,6 @@
                 if (!sessionResponse.ok) {
                     throw new Error(data.error || 'Session save failed');
                 }
-                // Redirect to dashboard
                 window.location.href = '/dashboard/';
                 
             } catch (error) {

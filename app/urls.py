@@ -14,4 +14,7 @@ urlpatterns = [
 	    path('sessionSave/', views.sessionSave, name='sessionSave'),
 	    path('logout/', views.logout, name='logout'),
 	    path('token/', views.token, name='token'),
+
+	    # Agency routes
+	    path('agency/', views.agency_dashboard, name='agency'),
 ]

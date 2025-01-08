@@ -4,3 +4,4 @@ venv/
 frontend/uploads/*
 media/uploads/properties/*
 media/uploads/*
+.env-production

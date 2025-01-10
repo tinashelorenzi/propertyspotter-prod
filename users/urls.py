@@ -18,5 +18,8 @@ urlpatterns = [
 
     #Registration routes
     path('register/', views.register_user, name='register_user'),
-    path('verify-email/<str:token>/', views.verify_email, name='verify_email')
+    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('setup-password/<str:token>/', views.setup_agent_password, name='setup-password'),
+    path('set-password/', views.set_agent_password, name='set-password-api'),
+    path('register-agent/', views.register_agent, name='register-agent'),
 ]

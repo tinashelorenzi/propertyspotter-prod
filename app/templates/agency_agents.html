@@ -259,8 +259,39 @@
 
 {% block custom_js %}
 {{ agents|json_script:"agents-data" }}
+{{ AGENCYDATA|json_script:"agency-data" }}
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+async function initializeAgentsPage() {
+    // Get the token first
+    const token = await fetchToken();
+    if (!token) {
+        Swal.fire({
+            title: 'Error',
+            text: 'Unable to authenticate. Please refresh the page.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
 
+    // Make token available globally for other functions
+    window.authToken = token;
+}
+async function fetchToken() {
+    try {
+        const response = await fetch('/token/');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.token;
+    } catch (error) {
+        console.error("Error fetching token:", error);
+        return null;
+    }
+}
 
 const agents = JSON.parse(document.getElementById('agents-data').textContent);
 function viewAgentDetails(agentId) {
@@ -328,32 +359,59 @@ function showAddAgentModal() {
 async function submitNewAgent() {
     const form = document.getElementById('addAgentForm');
     const formData = new FormData(form);
-    
+    const agencyData = JSON.parse(document.getElementById('agency-data').textContent);
+   
     try {
-        const response = await fetch('/api/users/', {
+        const response = await fetch('/api/users/register-agent/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${TOKEN}`
+                'Authorization': `Bearer ${window.authToken}`
             },
             body: JSON.stringify({
-                ...Object.fromEntries(formData),
-                role: 'Agent',
-                agency_id: '{{ agency.id }}',
-                is_active: true
+                first_name: formData.get('first_name'),
+                last_name: formData.get('last_name'),
+                email: formData.get('email'),
+                phone: formData.get('phone') || null,
+		agency: agencyData
             })
         });
 
+        const data = await response.json();
+        
         if (response.ok) {
-            window.location.reload();
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addAgentModal'));
+            modal.hide();
+            
+            // Show success message
+            Swal.fire({
+                title: 'Success!',
+                text: 'Agent registration successful. A welcome email has been sent with setup instructions.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                window.location.reload();
+            });
         } else {
-            const data = await response.json();
-            alert(data.error || 'Error adding agent. Please try again.');
+            // Show error message
+            Swal.fire({
+                title: 'Error',
+                text: data.error || 'Error adding agent. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error adding agent. Please try again.');
+        Swal.fire({
+            title: 'Error',
+            text: 'Network error occurred. Please try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
     }
 }
+document.addEventListener('DOMContentLoaded', initializeAgentsPage);
 </script>
 {% endblock %}

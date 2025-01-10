@@ -564,3 +564,231 @@ def verify_email(request, token):
         return Response({
             'error': 'Verification failed. Please try again.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@permission_classes([AllowAny])
+def setup_agent_password(request, token):
+    try:
+        # Find the verification token
+        verification = VerificationToken.objects.select_related('user').get(token=token)
+        
+        # Check if token has been used
+        if verification.used:
+            return render(request, 'setup_password.html', {
+                'error': 'This link has already been used. Please contact support if you need assistance.'
+            })
+        
+        # Store token in session for the API call
+        request.session['setup_password_token'] = token
+        
+        return render(request, 'setup_password.html', {
+            'token': token,
+            'email': verification.user.email
+        })
+        
+    except VerificationToken.DoesNotExist:
+        return render(request, 'users/setup_password.html', {
+            'error': 'Invalid or expired verification link. Please contact support.'
+        })
+
+@api_view(['POST'])
+@permission_classes([])
+def set_agent_password(request):
+    print("Invoked!")
+    try:
+        token = request.data.get('token')
+        password = request.data.get('password')
+        
+        if not token or not password:
+            return Response({
+                'error': 'Token and password are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            verification = VerificationToken.objects.select_related('user').get(token=token)
+        except VerificationToken.DoesNotExist:
+            return Response({
+                'error': 'Invalid verification token'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        if verification.used:
+            return Response({
+                'error': 'This verification token has already been used'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Validate password
+        if len(password) < 8:
+            return Response({
+                'error': 'Password must be at least 8 characters long'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Set password and activate account
+        user = verification.user
+        user.set_password(password)
+        user.is_active = True
+        user.save()
+        
+        # Mark token as used
+        verification.used = True
+        verification.save()
+        
+        return Response({
+            'message': 'Password set successfully. You can now login.'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def register_agent(request):
+    from agency_management.models import Agency
+    #Show all agent data
+    print(request.data)
+    all_data = request.data
+    agency_registering = all_data['agency']['name']
+    agency_registering_id = all_data['agency']['id']
+    print("Agency registering:", agency_registering)
+    try:
+        # Check if the requesting user is an agency admin
+        if request.user.role != 'Agency_Admin':
+            return Response(
+                {'error': 'Only agency administrators can register agents'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        data = request.data
+        print("Received agent registration data:", data)
+
+        # Basic validation
+        required_fields = ['email', 'first_name', 'last_name']
+        for field in required_fields:
+            if not data.get(field):
+                print(f"Validation failed: {field} is missing")
+                return Response(
+                    {'error': f'{field} is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Generate username from email (take part before @)
+        username = data['email'].split('@')[0]
+        # If username exists, append numbers until unique
+        base_username = username
+        counter = 1
+        while CustomUser.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        # Check if email already exists
+        if CustomUser.objects.filter(email=data['email']).exists():
+            print(f"Email {data['email']} already exists")
+            return Response(
+                {'error': 'Email already exists'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("Creating agent instance...")
+        try:
+            agency_obj = Agency.objects.get(id=agency_registering_id)
+            # Create user instance with is_active=False until they set their password
+            agent = CustomUser(
+                username=username,
+                email=data['email'],
+                first_name=data['first_name'],
+                last_name=data['last_name'],
+                role='Agent',
+                is_active=False,  # Will be set to True when they set their password
+                profile_complete=False,
+                agency=agency_obj  # Set the agency to the admin's agency
+            )
+            
+            if 'phone' in data:
+                agent.phone = data['phone']
+            
+            agent.save()
+            print(f"Agent created successfully with ID: {agent.id}")
+        except Exception as user_error:
+            print(f"Error creating agent: {str(user_error)}")
+            raise Exception(f"Failed to create agent: {str(user_error)}")
+
+        print("Generating verification token...")
+        try:
+            # Generate the token
+            verification_token = str(uuid.uuid4())
+            print(f"Generated token: {verification_token}")
+            
+            # Create verification token record
+            token = VerificationToken.objects.create(
+                user=agent,
+                token=verification_token,
+                expires_at=timezone.now() + timedelta(hours=48)  # 48 hours to set up password
+            )
+            print(f"Token saved to database successfully")
+        except Exception as token_error:
+            print(f"Error creating token: {str(token_error)}")
+            agent.delete()
+            raise Exception(f"Failed to create verification token: {str(token_error)}")
+
+        print("Preparing welcome email...")
+        try:
+            # Prepare welcome email context
+            setup_password_url = f"{settings.SITE_URL}/users/setup-password/{verification_token}/"
+            welcome_context = {
+                'user': agent,
+                'agency_name': agency_registering,
+                'setup_password_url': setup_password_url,
+                'site_url': settings.SITE_URL
+            }
+            print(f"Email context prepared with URL: {setup_password_url}")
+            
+            try:
+                print("Rendering email template...")
+                rendered_content = render_to_string(
+                    'mail_templates/agent_confirmation.html',
+                    welcome_context
+                )
+                print("Template rendered successfully")
+            except Exception as template_error:
+                print(f"Template rendering error: {str(template_error)}")
+                raise Exception(f"Failed to render email template: {str(template_error)}")
+
+            # Get or update email template
+            print("Preparing email template...")
+            email_template = EmailTemplate.objects.filter(name='agent_confirmation.html').first()
+            
+            if email_template:
+                print("Updating existing email template with new content")
+                email_template.html_content = rendered_content
+                email_template.save()
+            else:
+                print("Creating new email template")
+                email_template = EmailTemplate.objects.create(
+                    name='agent_welcome_email',
+                    subject=f'Welcome to {agency_registering} on {settings.SITE_NAME} - Set Up Your Agent Account',
+                    html_content=rendered_content
+                )
+
+            print("Sending welcome email...")
+            email_template.send_email(
+                to_email=agent.email,
+                context_data=welcome_context
+            )
+            print("Welcome email sent successfully")
+
+        except Exception as email_error:
+            print(f"Error in email process: {str(email_error)}")
+            token.delete()
+            agent.delete()
+            raise Exception(f"Failed to send welcome email: {str(email_error)}")
+
+        print("Agent registration process completed successfully")
+        return Response({
+            'message': 'Agent registered successfully. A welcome email has been sent with setup instructions.',
+            'user_id': agent.id
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        print(f"Final error catch: {str(e)}")
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

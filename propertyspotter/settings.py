@@ -179,3 +179,4 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL').strip()
 
 SITE_URL = os.getenv('WEBURL')
+SITE_NAME = os.getenv('SITE_NAME')

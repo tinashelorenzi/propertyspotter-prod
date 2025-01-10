@@ -1,0 +1,359 @@
+{% extends 'base_agency_admin.html' %}
+
+{% block title %}Agents - {{ agency.name }}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .agents-table {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .property-count {
+        font-size: 0.875rem;
+        color: #6B7280;
+    }
+
+    .property-count strong {
+        color: #374151;
+    }
+
+    .modal-agent-image {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .info-section {
+        margin-bottom: 1rem;
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 500;
+        border-radius: 0.375rem;
+    }
+
+    .badge.active {
+        background-color: #10B981;
+        color: white;
+    }
+
+    .badge.inactive {
+        background-color: #6B7280;
+        color: white;
+    }
+
+    .required-field::after {
+        content: "*";
+        color: #EF4444;
+        margin-left: 4px;
+    }
+
+    .agent-join-date {
+        font-size: 0.75rem;
+        color: #6B7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Agency Agents</h4>
+        <button class="btn btn-primary" onclick="showAddAgentModal()">
+            <i class="fas fa-plus me-2"></i>Add New Agent
+        </button>
+    </div>
+
+    <!-- Agents Table -->
+    <div class="agents-table">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Contact Info</th>
+                        <th>Properties Sold</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent in agents %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if agent.profile_image_url %}
+                                    <img src="{{ agent.profile_image_url }}" 
+                                         alt="{{ agent.first_name }}"
+                                         class="rounded-circle me-3"
+                                         width="40" height="40">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                                         style="width: 40px; height: 40px">
+                                        {{ agent.first_name|first }}{{ agent.last_name|first }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-medium">{{ agent.first_name }} {{ agent.last_name }}</div>
+                                    <div class="text-muted small">{{ agent.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>{{ agent.phone|default:"Not provided" }}</div>
+                            <div class="agent-join-date">
+                                Joined {{ agent.created_at|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="property-count">
+                                <strong>{{ agent.properties_sold }}</strong> properties
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if agent.is_active %}active{% else %}inactive{% endif %}">
+                                {{ agent.is_active|yesno:"Active,Inactive" }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="viewAgentDetails('{{ agent.id }}')">
+                                <i class="fas fa-eye me-1"></i>Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-users mb-3 fa-2x"></i>
+                                <p class="mb-0">No agents found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Agent Details Modal -->
+<div class="modal fade" id="agentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agent Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <img id="modalAgentImage" class="modal-agent-image mb-3">
+                    <h5 id="modalAgentName" class="mb-1"></h5>
+                    <div id="modalAgentEmail" class="text-muted"></div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <div class="info-label">Properties Sold</div>
+                            <div id="modalPropertiesSold" class="info-value"></div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-label">Phone Number</div>
+                            <div id="modalPhone" class="info-value"></div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-label">Join Date</div>
+                            <div id="modalJoinDate" class="info-value"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-section">
+                            <div class="info-label">Account Status</div>
+                            <div id="modalStatus" class="info-value"></div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-label">Last Login</div>
+                            <div id="modalLastLogin" class="info-value"></div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-label">Profile Status</div>
+                            <div id="modalProfileStatus" class="info-value"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Agent Modal -->
+<div class="modal fade" id="addAgentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Agent</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAgentForm">
+                    <div class="mb-3">
+                        <label class="form-label required-field">First Name</label>
+                        <input type="text" class="form-control" name="first_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-field">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required-field">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        An email will be sent to the agent with instructions to set up their account.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitNewAgent()">
+                    <i class="fas fa-plus-circle me-1"></i>Add Agent
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+{{ agents|json_script:"agents-data" }}
+<script>
+
+
+const agents = JSON.parse(document.getElementById('agents-data').textContent);
+function viewAgentDetails(agentId) {
+    const agent = agents.find(a => a.id === agentId);
+    
+    if (agent) {
+        // Profile image
+        const modalImage = document.getElementById('modalAgentImage');
+        if (agent.profile_image_url) {
+            modalImage.src = agent.profile_image_url;
+            modalImage.style.display = 'block';
+        } else {
+            modalImage.style.display = 'none';
+        }
+
+        // Basic info
+        document.getElementById('modalAgentName').textContent = 
+            `${agent.first_name} ${agent.last_name}`;
+        document.getElementById('modalAgentEmail').textContent = agent.email;
+        document.getElementById('modalPhone').textContent = 
+            agent.phone || 'Not provided';
+        document.getElementById('modalPropertiesSold').textContent = 
+            `${agent.properties_sold || 0} properties`;
+
+        // Status and dates
+        document.getElementById('modalStatus').innerHTML = 
+            `<span class="badge ${agent.is_active ? 'active' : 'inactive'}">
+                ${agent.is_active ? 'Active' : 'Inactive'}
+            </span>`;
+            
+        document.getElementById('modalJoinDate').textContent = 
+            new Date(agent.created_at).toLocaleDateString('en-ZA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+        document.getElementById('modalLastLogin').textContent = 
+            agent.last_login ? 
+            new Date(agent.last_login).toLocaleDateString('en-ZA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) : 'Never logged in';
+            
+        document.getElementById('modalProfileStatus').innerHTML = 
+            `<span class="badge ${agent.profile_complete ? 'active' : 'inactive'}">
+                ${agent.profile_complete ? 'Complete' : 'Incomplete'}
+            </span>`;
+
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('agentDetailsModal'));
+        modal.show();
+    }
+}
+
+
+function showAddAgentModal() {
+    document.getElementById('addAgentForm').reset();
+    new bootstrap.Modal(document.getElementById('addAgentModal')).show();
+}
+
+async function submitNewAgent() {
+    const form = document.getElementById('addAgentForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/api/users/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${TOKEN}`
+            },
+            body: JSON.stringify({
+                ...Object.fromEntries(formData),
+                role: 'Agent',
+                agency_id: '{{ agency.id }}',
+                is_active: true
+            })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Error adding agent. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding agent. Please try again.');
+    }
+}
+</script>
+{% endblock %}

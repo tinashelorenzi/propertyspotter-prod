@@ -10,6 +10,7 @@ from .serializers import AgencySerializer
 from .serializers import AgencySerializerAPI
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
+from .serializers import AgentSerializerAgency
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -134,6 +135,44 @@ def get_all_agencies(request):
         return paginator.get_paginated_response(serializer.data)
         
     except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_agency_agents(request, agency_id):
+    print("Fetching agents for agency:", agency_id)
+    from users.models import CustomUser
+    from agency_management.models import Agency
+    try:
+        print("Trying...")
+        # Verify the agency exists
+        agency = get_object_or_404(Agency, id=agency_id)
+        print("Agency found:", agency)
+        # Check if user has permission to view agency agents
+        if not (request.user.role in ['Admin', 'Agency_Admin'] or 
+                request.user.agency and str(request.user.agency.id) == str(agency_id)):
+            return Response(
+                {"error": "You don't have permission to view these agents"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all agents for the agency
+        agents = CustomUser.objects.filter(
+            agency=agency,
+            role='Agent'
+        ).order_by('-created_at')
+        
+        # Serialize the agents
+        serializer = AgentSerializerAgency(agents, many=True)
+        print("Agents serialized:", serializer.data)
+        
+        return Response(serializer.data)
+        
+    except Exception as e:
+        print("Error:", str(e))
         return Response(
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -50,7 +50,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=15, choices=ROLE_CHOICES, default="Spotter")
     agency = models.ForeignKey(
-        'users.Agency',
+        'agency_management.Agency',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

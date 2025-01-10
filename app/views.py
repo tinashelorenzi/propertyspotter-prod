@@ -318,3 +318,55 @@ def calculate_trend(current_value, previous_value):
     if previous_value == 0:
         return 0
     return ((current_value - previous_value) / previous_value) * 100
+
+@securedRoute
+def agency_agents(request):
+    base_url = request.build_absolute_uri('/')[:-1]
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
+
+    if not agency_data:
+        return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # First get all agents for this agency using our agency API
+        agents_response = requests.get(
+            f'{base_url}/api/agency/agents/{agency_data["id"]}/',
+            headers=headers
+        )
+        
+        if agents_response.ok:
+            basic_agents = agents_response.json()
+            
+            # Now fetch detailed information for each agent
+            agents_details = []
+            for agent in basic_agents:
+                # Get detailed user information
+                user_response = requests.get(
+                    f'{base_url}/api/users/{agent["id"]}/',
+                    headers=headers
+                )
+                
+                if user_response.ok:
+                    agent_details = user_response.json()
+                    # Add properties sold count from our original data
+                    agent_details['properties_sold'] = agent.get('properties_sold', 0)
+                    agents_details.append(agent_details)
+                else:
+                    print(f"Error fetching user details for {agent['id']}: {user_response.status_code}")
+            
+            context = {
+                'agency': agency_data,
+                'agents': agents_details
+            }
+            
+            return render(request, 'agency_agents.html', context)
+        else:
+            print(f"Error fetching agents: {agents_response.status_code}")
+            return render(request, 'agency_agents.html', {'agency': agency_data, 'agents': []})
+
+    except Exception as e:
+        print(f"Error in agents view: {str(e)}")
+        return redirect('login')

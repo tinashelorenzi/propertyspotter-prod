@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from .models import Agency, Agent
 from users.serializers import CustomUserSerializer
+from users.models import CustomUser
+from leads.models import Lead
+from django.db.models import Q
 
 class AgencySerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,3 +54,31 @@ class AgencySerializerAPI(serializers.ModelSerializer):
             status='Completed'
         )
         return sum(lead.property_value for lead in completed_leads if lead.property_value)
+
+class AgentSerializerAgency(serializers.ModelSerializer):
+    print("AgentSerializerAgency")
+    properties_sold = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'role',
+            'is_active',
+            'created_at',
+            'last_login',
+            'profile_image_url',
+            'properties_sold'
+        ]
+    
+    def get_properties_sold(self, obj):
+        print("All properties sold")
+        return Lead.objects.filter(
+            Q(assigned_agent=obj),
+            Q(status='Commission_Paid') | Q(status='Sold')
+        ).count()

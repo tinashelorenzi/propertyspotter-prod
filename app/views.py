@@ -8,6 +8,9 @@ from django.contrib.auth import get_user_model
 from .decorators import securedRoute
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
+from django.db.models import Q, F
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 import json, requests
 from collections import defaultdict
 CustomUser = get_user_model()
@@ -417,4 +420,162 @@ def agency_leads(request):
 
     except Exception as e:
         print(f"Error in agency leads view: {str(e)}")
+        return redirect('/login')
+
+@securedRoute
+def agency_payments(request):
+    base_url = request.build_absolute_uri('/')[:-1]
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
+
+    if not agency_data:
         return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # Fetch all successful leads for the agency first
+        leads_response = requests.get(
+            f'{base_url}/api/leads/by-agency/{agency_data["id"]}/',
+            headers=headers
+        )
+        
+        if not leads_response.ok:
+            print(f"Error fetching leads: {leads_response.status_code}")
+            leads = []
+        else:
+            # Filter only successful leads (Commission Paid status)
+            leads = leads_response.json()
+
+        # For each successful lead, fetch its commission details
+        payments_data = []
+        for lead in leads:
+            try:
+                commission_response = requests.get(
+                    f'{base_url}/api/commissions/by-lead/{lead["id"]}/',
+                    headers=headers
+                )
+                
+                if commission_response.ok:
+                    commission = commission_response.json()
+                    # Combine lead and commission data
+                    payment_info = {
+                        'id': commission['id'],
+                        'lead_id': lead['id'],
+                        'property': lead['property'],
+                        'spotter': lead['spotter'],
+                        'assigned_agent': lead['assigned_agent'],
+                        'created_at': commission['created_at'],
+                        'paid_at': commission['paid_at'],
+                        'amount': commission['amount'],
+                        'status': commission['status'],
+                        'payment_reference': commission.get('payment_reference'),
+                        'notes': commission.get('notes')
+                    }
+                    payments_data.append(payment_info)
+                else:
+                    # payment_info empty
+                    payment_info = {
+                        'id': None,
+                        'lead_id': lead['id'],
+                        'property': lead['property'],
+                        'spotter': lead['spotter'],
+                        'assigned_agent': lead['assigned_agent'],
+                        'created_at': None,
+                        'paid_at': None,
+                        'amount': 0,
+                        'status': "Unpaid",
+                        'payment_reference': None,
+                        'notes': None
+                    }
+                    payments_data.append(payment_info)
+                    print(f"Error fetching commission for lead {lead['id']}: {commission_response.status_code}")
+
+            except Exception as e:
+                print(f"Error processing commission for lead {lead['id']}: {str(e)}")
+                continue
+
+        context = {
+            'agency': agency_data,
+            'payments': payments_data
+        }
+
+        # Calculate some summary statistics for possible future use
+        summary_stats = {
+            'total_payments': len(payments_data),
+            'pending_payments': sum(1 for p in payments_data if p['status'] == 'Pending'),
+            'completed_payments': sum(1 for p in payments_data if p['status'] == 'Paid'),
+            'total_amount': sum(float(p['amount']) for p in payments_data),
+            'paid_amount': sum(float(p['amount']) for p in payments_data if p['status'] == 'Paid')
+        }
+        
+        context['summary_stats'] = summary_stats
+
+        return render(request, 'agency_spotter_payments.html', context)
+
+    except Exception as e:
+        print(f"Error in payments view: {str(e)}")
+        return redirect('/login')
+
+
+
+#main Processing endpoints
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def process_commission_payment(request):
+    import requests
+    from commissions.models import Commission
+    from leads.models import Lead
+    from properties.models import Property
+    from rest_framework.response import Response
+    from rest_framework import status
+
+    base_url = request.build_absolute_uri('/')[:-1]
+    try:
+        commission_id = request.data.get('commission_id')
+        lead_id = request.data.get('lead_id')
+        property_id = request.data.get('property_id')
+        payment_reference = request.data.get('payment_reference')
+        payment_date = request.data.get('payment_date')
+
+        if not all([commission_id, lead_id, property_id, payment_reference, payment_date]):
+            return Response({
+                "error": "Missing required fields"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update Commission
+        commission_response = requests.post(
+            f"{base_url}/api/commissions/{commission_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'},
+            data={'payment_reference': payment_reference, 'payment_date': payment_date}
+        )
+        if not commission_response.ok:
+            raise Exception("Failed to update commission")
+
+        # Update Lead
+        lead_response = requests.post(
+            f"{base_url}/api/leads/{lead_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'}
+        )
+        if not lead_response.ok:
+            raise Exception("Failed to update lead")
+
+        # Update Property
+        property_response = requests.post(
+            f"{base_url}/api/properties/{property_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'}
+        )
+        if not property_response.ok:
+            raise Exception("Failed to update property")
+
+        return Response({
+            "message": "Commission payment processed successfully",
+            "commission": commission_response.json(),
+            "lead": lead_response.json(),
+            "property": property_response.json()
+        })
+
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

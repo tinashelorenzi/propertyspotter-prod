@@ -50,3 +50,28 @@ def get_commissions_by_spotter(request, spotter_id):
    commissions = Commission.objects.filter(spotter__id=spotter_id)
    serializer = CommissionSerializer(commissions, many=True)
    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_commission_paid(request, commission_id):
+    from .models import Commission, CommissionStatus
+    try:
+        commission = Commission.objects.get(id=commission_id)
+        
+        # Add payment details
+        payment_reference = request.data.get('payment_reference')
+        payment_date = request.data.get('payment_date')
+        
+        commission.status = CommissionStatus.PAID
+        commission.payment_reference = payment_reference
+        commission.paid_at = payment_date
+        commission.save()
+        
+        serializer = CommissionSerializer(commission)
+        return Response(serializer.data)
+        
+    except Commission.DoesNotExist:
+        return Response(
+            {"error": "Commission not found"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )

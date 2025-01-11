@@ -8,4 +8,5 @@ urlpatterns = [
    path('<uuid:lead_id>/assign-agency/', views.assign_to_agency),
    path('<uuid:lead_id>/assign-agent/', views.assign_to_agent),
    path('new/', views.create_lead),
+   path('<uuid:lead_id>/mark-paid/', views.mark_lead_commission_paid, name='mark-lead-paid'),
 ]

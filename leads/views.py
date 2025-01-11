@@ -84,3 +84,20 @@ def create_lead(request):
        print(e)
        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_lead_commission_paid(request, lead_id):
+    from properties.models import PropertyStatus
+    try:
+        lead = Lead.objects.get(id=lead_id)
+        lead.status = PropertyStatus.COMMISSION_PAID
+        lead.save()
+        
+        serializer = LeadSerializer(lead)
+        return Response(serializer.data)
+        
+    except Lead.DoesNotExist:
+        return Response(
+            {"error": "Lead not found"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )

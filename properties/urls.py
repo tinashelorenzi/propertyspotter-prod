@@ -8,5 +8,5 @@ urlpatterns = [
     path('create/', views.create_property, name='create-property'),
     path('update/', views.update_property, name='update-property'),
     path('delete/', views.delete_property, name='delete-property'),
-    
+    path('<uuid:property_id>/mark-paid/', views.mark_property_commission_paid, name='mark-property-paid'),
 ]

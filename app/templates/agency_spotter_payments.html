@@ -1,0 +1,703 @@
+{% extends 'base_agency_admin.html' %}
+
+{% block title %}Spotter Payments - {{ AGENCYDATA.name }}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .payments-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .property-info {
+        max-width: 250px;
+    }
+
+    .property-address {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 2px;
+    }
+
+    .property-price {
+        color: #059669;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-pending {
+        background-color: #FEF3C7;
+        color: #D97706;
+    }
+
+    .status-paid {
+        background-color: #D1FAE5;
+        color: #059669;
+    }
+
+    .status-failed {
+        background-color: #FEE2E2;
+        color: #DC2626;
+    }
+
+    .commission-amount {
+        font-weight: 600;
+        color: #1F2937;
+    }
+
+    .spotter-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .spotter-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .spotter-avatar-placeholder {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #E5E7EB;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9CA3AF;
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .payment-details-section {
+        background-color: #F9FAFB;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .detail-label {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .payment-breakdown {
+        border-left: 3px solid #3B82F6;
+        padding-left: 1rem;
+        margin: 1rem 0;
+    }
+
+    .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Spotter Payments</h4>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Payment Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Failed">Failed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="dateFilter">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" placeholder="Search by property or spotter..." id="searchInput">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="applyFilters()">
+                    <i class="fas fa-filter me-2"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="payments-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Property Details</th>
+                        <th>Spotter</th>
+                        <th>Assigned Agent</th>
+                        <th>Commission</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>
+                            <div class="property-info">
+                                <div class="property-address">{{ payment.property.address }}</div>
+                                <div class="property-price">R{{ payment.property.price|floatformat:2 }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="spotter-info">
+                                {% if payment.spotter.profile_image_url %}
+                                    <img src="{{ payment.spotter.profile_image_url }}" alt="Spotter" class="spotter-avatar">
+                                {% else %}
+                                    <div class="spotter-avatar-placeholder">
+                                        {{ payment.spotter.first_name|first }}{{ payment.spotter.last_name|first }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-medium">{{ payment.spotter.first_name }} {{ payment.spotter.last_name }}</div>
+                                    <div class="text-muted small">{{ payment.spotter.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if payment.assigned_agent %}
+                                {{ payment.assigned_agent.first_name }} {{ payment.assigned_agent.last_name }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="commission-amount">R{{ payment.amount|floatformat:2 }}</div>
+                            <div class="text-muted small">5% of total commission</div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ payment.status|lower }}">
+                                {{ payment.status }}
+                            </span>
+                        </td>
+                        <td>{{ payment.created_at|date:"M d, Y" }}</td>
+                        <td>
+    <button class="btn btn-sm btn-outline-primary me-2" 
+            onclick="viewPaymentDetails('{{ payment.id }}')">
+        <i class="fas fa-eye me-1"></i>Details
+    </button>
+    {% if payment.status != 'Paid' %}
+    <button class="btn btn-sm btn-success" 
+            onclick="showRegisterPaymentModal('{{ payment.lead_id }}')">
+        <i class="fas fa-money-check me-1"></i>Register Payment
+    </button>
+    {% endif %}
+</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-money-check-alt mb-3 fa-2x"></i>
+                                <p class="mb-0">No payments found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Register Payment Modal  -->
+<!-- Register Payment Modal -->
+<div class="modal fade" id="registerPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Register Commission Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <input type="hidden" id="paymentCommissionId">
+                    <input type="hidden" id="paymentLeadId">
+                    <input type="hidden" id="paymentPropertyId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Commission Amount (7.5%)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R</span>
+                            <input type="text" class="form-control" id="commissionAmount" disabled>
+                        </div>
+                        <div class="form-text text-muted">
+                            This is the 7.5% commission share for Property Spotter
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required-field">Payment Reference</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="paymentReference" 
+                               placeholder="Enter payment reference number"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required-field">Payment Date</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="paymentDate"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" 
+                                 id="paymentNotes" 
+                                 rows="3"
+                                 placeholder="Any additional notes about the payment"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitPayment()">
+                    <i class="fas fa-check me-1"></i>Register Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-details-section">
+                    <h6 class="mb-3">Property Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-label">Address</div>
+                            <div id="modalAddress" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Sale Price</div>
+                            <div id="modalSalePrice" class="detail-value"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-details-section">
+                    <h6 class="mb-3">Commission Breakdown</h6>
+                    <div class="payment-breakdown">
+                        <div class="breakdown-item">
+                            <span>Total Commission</span>
+                            <span id="modalTotalCommission" class="fw-bold"></span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Spotter Commission (5%)</span>
+                            <span id="modalSpotterCommission" class="text-success fw-bold"></span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Platform Fee (2.5%)</span>
+                            <span id="modalPlatformFee" class="text-primary fw-bold"></span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Agency Share (92.5%)</span>
+                            <span id="modalAgencyShare" class="text-secondary fw-bold"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-details-section">
+                    <h6 class="mb-3">Payment Status</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-label">Status</div>
+                            <div id="modalStatus" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Payment Date</div>
+                            <div id="modalPaymentDate" class="detail-value"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="detail-label">Payment Reference</div>
+                        <div id="modalPaymentReference" class="detail-value"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{ payments|json_script:"payments-data" }}
+
+<script>
+let filteredPaymentsData = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the filtered data
+    const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
+    filteredPaymentsData = [...paymentsData];
+});
+
+async function viewPaymentDetails(paymentId) {
+    const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
+    const payment = paymentsData.find(p => p.id === paymentId);
+    
+    if (payment) {
+        try {
+            // Fetch commission details for this payment
+            const response = await fetch(`/api/commissions/by-lead/${payment.lead_id}/`, {
+                headers: {
+                    'Authorization': `Bearer ${window.authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const commissionData = await response.json();
+                const propertyPrice = parseFloat(payment.property.price);
+                const totalCommission = parseFloat(commissionData.amount);
+                const spotterCommission = totalCommission * 0.05;  // 5%
+                const platformFee = totalCommission * 0.025;      // 2.5%
+                const agencyShare = totalCommission * 0.925;      // 92.5%
+
+                // Property Information
+                document.getElementById('modalAddress').textContent = payment.property.address;
+                document.getElementById('modalSalePrice').textContent = 
+                    `R${propertyPrice.toLocaleString()}`;
+
+                // Commission Breakdown
+                document.getElementById('modalTotalCommission').textContent = 
+                    `R${totalCommission.toLocaleString()}`;
+                document.getElementById('modalSpotterCommission').textContent = 
+                    `R${spotterCommission.toLocaleString()}`;
+                document.getElementById('modalPlatformFee').textContent = 
+                    `R${platformFee.toLocaleString()}`;
+                document.getElementById('modalAgencyShare').textContent = 
+                    `R${agencyShare.toLocaleString()}`;
+
+                // Payment Status Information
+                document.getElementById('modalStatus').innerHTML = `
+                    <span class="status-badge status-${payment.status.toLowerCase()}">
+                        ${payment.status}
+                    </span>
+                `;
+                
+                document.getElementById('modalPaymentDate').textContent = payment.paid_at ? 
+                    new Date(payment.paid_at).toLocaleDateString('en-ZA', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }) : 'Pending';
+                
+                document.getElementById('modalPaymentReference').textContent = 
+                    payment.payment_reference || 'Not available';
+
+            } else {
+                throw new Error('Failed to fetch commission details');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to load payment details. Please try again.'
+            });
+            return;
+        }
+
+        // Show the modal
+        new bootstrap.Modal(document.getElementById('paymentDetailsModal')).show();
+    }
+}
+
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const dateRange = document.getElementById('dateFilter').value;
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
+    let filteredPayments = [...paymentsData];
+
+    // Apply status filter
+    if (status) {
+        filteredPayments = filteredPayments.filter(p => p.status.toLowerCase() === status.toLowerCase());
+    }
+
+    // Apply date filter
+    if (dateRange !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        filteredPayments = filteredPayments.filter(p => {
+            const paymentDate = new Date(p.created_at);
+            switch(dateRange) {
+                case 'today':
+                    return paymentDate >= today;
+                case 'week':
+                    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    return paymentDate >= weekAgo;
+                case 'month':
+                    const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+                    return paymentDate >= monthAgo;
+                case 'year':
+                    const yearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+                    return paymentDate >= yearAgo;
+                default:
+                    return true;
+            }
+        });
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+        filteredPayments = filteredPayments.filter(p => 
+            p.property.address.toLowerCase().includes(searchTerm) ||
+            `${p.spotter.first_name} ${p.spotter.last_name}`.toLowerCase().includes(searchTerm) ||
+            (p.assigned_agent && 
+             `${p.assigned_agent.first_name} ${p.assigned_agent.last_name}`.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Update filtered data
+    filteredPaymentsData = filteredPayments;
+    updateTable();
+}
+
+function updateTable() {
+    const tbody = document.querySelector('table tbody');
+    
+    if (filteredPaymentsData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-money-check-alt mb-3 fa-2x"></i>
+                        <p class="mb-0">No payments found</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filteredPaymentsData.map(payment => `
+        <tr>
+            <td>
+                <div class="property-info">
+                    <div class="property-address">${payment.property.address}</div>
+                    <div class="property-price">R${parseFloat(payment.property.price).toLocaleString()}</div>
+                </div>
+            </td>
+            <td>
+                <div class="spotter-info">
+                    ${payment.spotter.profile_image_url ?
+                        `<img src="${payment.spotter.profile_image_url}" alt="Spotter" class="spotter-avatar">` :
+                        `<div class="spotter-avatar-placeholder">
+                            ${payment.spotter.first_name[0]}${payment.spotter.last_name[0]}
+                         </div>`
+                    }
+                    <div>
+                        <div class="fw-medium">${payment.spotter.first_name} ${payment.spotter.last_name}</div>
+                        <div class="text-muted small">${payment.spotter.email}</div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                ${payment.assigned_agent ? 
+                    `${payment.assigned_agent.first_name} ${payment.assigned_agent.last_name}` :
+                    '<span class="text-muted">Not assigned</span>'
+                }
+            </td>
+            <td>
+                <div class="commission-amount">R${parseFloat(payment.amount).toLocaleString()}</div>
+                <div class="text-muted small">5% of total commission</div>
+            </td>
+            <td>
+                <span class="status-badge status-${payment.status.toLowerCase()}">
+                    ${payment.status}
+                </span>
+            </td>
+            <td>${new Date(payment.created_at).toLocaleDateString('en-ZA')}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" 
+                        onclick="viewPaymentDetails('${payment.id}')">
+                    <i class="fas fa-eye me-1"></i>Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Event listeners for filter inputs
+document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('dateFilter').addEventListener('change', applyFilters);
+
+// Debounce function for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+async function showRegisterPaymentModal(leadId) {
+    console.log('Opening register modal for lead:', leadId); // Debug log
+    
+    const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
+    const payment = paymentsData.find(p => p.lead_id === leadId);
+    
+    console.log('Found payment data:', payment); // Debug log
+    
+    if (payment) {
+        try {
+            // Store IDs for submission
+            document.getElementById('paymentLeadId').value = payment.lead_id;
+            document.getElementById('paymentPropertyId').value = payment.property.id;
+            
+            // Calculate and display commission amount
+            const propertyPrice = parseFloat(payment.property.price);
+            const commissionAmount = propertyPrice * 0.075; // 7.5%
+            document.getElementById('commissionAmount').value = commissionAmount.toLocaleString();
+            
+            // Set today as default payment date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('paymentDate').value = today;
+            
+            // Reset other fields
+            document.getElementById('paymentReference').value = '';
+            document.getElementById('paymentNotes').value = '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('registerPaymentModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('Error showing register modal:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to open register payment modal. Please try again.'
+            });
+        }
+    } else {
+        console.error('Payment not found for lead:', leadId);
+    }
+}
+
+async function submitPayment() {
+    const form = document.getElementById('paymentForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    try {
+        const paymentData = {
+            commission_id: document.getElementById('paymentCommissionId').value,
+            lead_id: document.getElementById('paymentLeadId').value,
+            property_id: document.getElementById('paymentPropertyId').value,
+            payment_reference: document.getElementById('paymentReference').value,
+            payment_date: document.getElementById('paymentDate').value,
+            notes: document.getElementById('paymentNotes').value
+        };
+
+        const response = await fetch('/api/commissions/process-payment/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authToken}`
+            },
+            body: JSON.stringify(paymentData)
+        });
+
+        if (response.ok) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('registerPaymentModal')).hide();
+            
+            // Show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Payment Registered',
+                text: 'The commission payment has been successfully registered.',
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'OK'
+            });
+
+            // Reload page
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to register payment');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Registration Failed',
+            text: error.message || 'Failed to register payment. Please try again.',
+            confirmButtonColor: '#DC3545',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+</script>
+{% endblock %}

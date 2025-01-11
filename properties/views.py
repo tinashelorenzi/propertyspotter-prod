@@ -168,3 +168,21 @@ def delete_property(request):
             {"error": "Property not found"}, 
             status=status.HTTP_404_NOT_FOUND
         )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_property_commission_paid(request, property_id):
+    from properties.models import PropertyStatus
+    try:
+        property = Property.objects.get(id=property_id)
+        property.status = PropertyStatus.COMMISSION_PAID
+        property.save()
+        
+        serializer = PropertySerializer(property)
+        return Response(serializer.data)
+        
+    except Property.DoesNotExist:
+        return Response(
+            {"error": "Property not found"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )

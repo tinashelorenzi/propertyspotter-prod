@@ -219,6 +219,15 @@
                 <div class="property-info-label">Notes</div>
                 <div id="modalNotes" class="property-info-value"></div>
             </div>
+	    <hr>
+	    <div class="row">
+	    <div class="commission-details" id="modalCommissionDetails">
+    <h6 class="mb-3">Commission Details</h6>
+    <div id="commissionContent">
+        <!-- Content will be populated by JavaScript -->
+    </div>
+</div>
+</div>
         </div>
     </div>
 </div>
@@ -262,7 +271,7 @@
 let selectedAgentId = null;
 let currentLeadId = null;
 
-function viewLeadDetails(leadId) {
+async function viewLeadDetails(leadId) {
     const leadsData = JSON.parse(document.getElementById('leads-data').textContent);
     const lead = leadsData.find(l => l.id === leadId);
     
@@ -281,6 +290,67 @@ function viewLeadDetails(leadId) {
         document.getElementById('modalAssignedAgent').textContent = lead.assigned_agent ? 
             `${lead.assigned_agent.first_name} ${lead.assigned_agent.last_name}` : 'Not assigned';
         document.getElementById('modalNotes').textContent = lead.notes || 'No notes available';
+
+	try {
+            const response = await fetch(`/api/commissions/by-lead/${leadId}/`, {
+                headers: {
+                    'Authorization': `Bearer ${window.authToken}`
+                }
+            });
+            
+            const commissionContent = document.getElementById('commissionContent');
+            
+            if (response.ok) {
+                const commissionData = await response.json();
+                const propertyValue = parseFloat(lead.property.price);
+                const commissionAmount = parseFloat(commissionData.amount);
+                const spotterAmount = commissionAmount * 0.05; // 5% to spotter
+                const platformAmount = commissionAmount * 0.025; // 2.5% to platform
+                
+                commissionContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="property-info-label">Property Value</div>
+                            <div class="property-info-value">R${propertyValue.toLocaleString()}</div>
+                            
+                            <div class="property-info-label">Total Commission</div>
+                            <div class="property-info-value">R${commissionAmount.toLocaleString()} 
+                                <span class="text-muted small">
+                                    (${((commissionAmount/propertyValue)*100).toFixed(2)}% of property value)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="property-info-label">Spotter Commission (5%)</div>
+                            <div class="property-info-value">R${spotterAmount.toLocaleString()}</div>
+                            
+                            <div class="property-info-label">Platform Commission (2.5%)</div>
+                            <div class="property-info-value">R${platformAmount.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        The remaining ${92.5}% (R${(commissionAmount * 0.925).toLocaleString()}) goes to the agency.
+                    </div>
+                `;
+            } else {
+                commissionContent.innerHTML = `
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Commission details are not yet available. This typically means the agent hasn't completed 
+                        commission negotiations with the property owner.
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching commission:', error);
+            document.getElementById('commissionContent').innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    An error occurred while fetching commission details.
+                </div>
+            `;
+        }
 
         new bootstrap.Modal(document.getElementById('leadDetailsModal')).show();
     }

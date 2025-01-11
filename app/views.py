@@ -370,3 +370,51 @@ def agency_agents(request):
     except Exception as e:
         print(f"Error in agents view: {str(e)}")
         return redirect('login')
+
+@securedRoute
+def agency_leads(request):
+    base_url = request.build_absolute_uri('/')[:-1]
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
+
+    if not agency_data:
+        return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # Fetch all leads for the agency
+        leads_response = requests.get(
+            f'{base_url}/api/leads/by-agency/{agency_data["id"]}/',
+            headers=headers
+        )
+        
+        if not leads_response.ok:
+            print(f"Error fetching leads: {leads_response.status_code}")
+            leads = []
+        else:
+            leads = leads_response.json()
+
+        # Fetch all agents for the agency
+        agents_response = requests.get(
+            f'{base_url}/api/agency/agents/{agency_data["id"]}/',
+            headers=headers
+        )
+        
+        if not agents_response.ok:
+            print(f"Error fetching agents: {agents_response.status_code}")
+            agents = []
+        else:
+            agents = agents_response.json()
+
+        context = {
+            'leads': leads,
+            'agents': agents,
+            'agency': agency_data
+        }
+
+        return render(request, 'agency_leads.html', context)
+
+    except Exception as e:
+        print(f"Error in agency leads view: {str(e)}")
+        return redirect('login')

@@ -1,0 +1,393 @@
+{% extends 'base_agency_admin.html' %}
+
+{% block title %}Leads - {{ agency.name }}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .leads-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-new_submission {
+        background-color: #E5F7ED;
+        color: #10B981;
+    }
+
+    .status-assigned {
+        background-color: #EEF7FF;
+        color: #3B82F6;
+    }
+
+    .status-commission_paid {
+        background-color: #D1FAE5;
+        color: #059669;
+    }
+
+    .modal-property-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .property-info-label {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .property-info-value {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 1rem;
+    }
+
+    .agent-search {
+        margin-bottom: 1rem;
+    }
+
+    .agent-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .agent-item {
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .agent-item:hover {
+        background-color: #F3F4F6;
+    }
+
+    .agent-item.selected {
+        background-color: #EEF7FF;
+        border: 1px solid #3B82F6;
+    }
+
+    .lead-price {
+        font-weight: 600;
+        color: #059669;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Agency Leads</h4>
+    </div>
+
+    <div class="leads-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Property Details</th>
+                        <th>Price</th>
+                        <th>Spotter</th>
+                        <th>Assigned To</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td>
+                            <div class="fw-medium">{{ lead.property.address }}</div>
+                            <div class="text-muted small">{{ lead.property.property_type }}</div>
+                        </td>
+                        <td class="lead-price">R{{ lead.property.price|floatformat:2 }}</td>
+                        <td>
+                            <div>{{ lead.spotter.first_name }} {{ lead.spotter.last_name }}</div>
+                            <div class="text-muted small">{{ lead.spotter.email }}</div>
+                        </td>
+                        <td>
+                            {% if lead.assigned_agent %}
+                                {{ lead.assigned_agent.first_name }} {{ lead.assigned_agent.last_name }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ lead.status|lower }}">
+                                {{ lead.status }}
+                            </span>
+                        </td>
+                        <td>{{ lead.created_at|date:"M d, Y" }}</td>
+                        <td>
+    <button class="btn btn-sm btn-outline-primary me-2" 
+            onclick="viewLeadDetails('{{ lead.id }}')">
+        <i class="fas fa-eye me-1"></i>Details
+    </button>
+    <button class="btn btn-sm {% if lead.assigned_agent %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+            onclick="showAssignAgentModal('{{ lead.id }}')">
+        <i class="fas {% if lead.assigned_agent %}fa-user-edit{% else %}fa-user-plus{% endif %} me-1"></i>
+        {% if lead.assigned_agent %}Reassign{% else %}Assign{% endif %}
+    </button>
+</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox mb-3 fa-2x"></i>
+                                <p class="mb-0">No leads found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Lead Details Modal -->
+<div class="modal fade" id="leadDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lead Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <img id="modalPropertyImage" class="modal-property-image">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="property-info-label">Address</div>
+                        <div id="modalAddress" class="property-info-value"></div>
+
+                        <div class="property-info-label">Property Type</div>
+                        <div id="modalPropertyType" class="property-info-value"></div>
+
+                        <div class="property-info-label">Price</div>
+                        <div id="modalPrice" class="property-info-value"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="property-info-label">Bedrooms</div>
+                        <div id="modalBedrooms" class="property-info-value"></div>
+
+                        <div class="property-info-label">Bathrooms</div>
+                        <div id="modalBathrooms" class="property-info-value"></div>
+
+                        <div class="property-info-label">Garages</div>
+                        <div id="modalGarages" class="property-info-value"></div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="property-info-label">Spotter</div>
+                        <div id="modalSpotter" class="property-info-value"></div>
+
+                        <div class="property-info-label">Created Date</div>
+                        <div id="modalCreatedDate" class="property-info-value"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="property-info-label">Status</div>
+                        <div id="modalStatus" class="property-info-value"></div>
+
+                        <div class="property-info-label">Assigned Agent</div>
+                        <div id="modalAssignedAgent" class="property-info-value"></div>
+                    </div>
+                </div>
+
+                <div class="property-info-label">Notes</div>
+                <div id="modalNotes" class="property-info-value"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Agent Modal -->
+<div class="modal fade" id="assignAgentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Agent</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="agent-search mb-3">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Search agents..." 
+                           onkeyup="filterAgents(this.value)">
+                </div>
+
+                <div class="agent-list" id="agentList">
+                    <!-- Agents will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="assignAgent()" disabled id="assignButton">
+                    Assign Agent
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+
+{{ leads|json_script:"leads-data" }}
+{{ agents|json_script:"agents-data" }}
+<script>
+let selectedAgentId = null;
+let currentLeadId = null;
+
+function viewLeadDetails(leadId) {
+    const leadsData = JSON.parse(document.getElementById('leads-data').textContent);
+    const lead = leadsData.find(l => l.id === leadId);
+    
+    if (lead) {
+        // Populate modal with lead data
+        document.getElementById('modalPropertyImage').src = lead.property.featured_image || '';
+        document.getElementById('modalAddress').textContent = lead.property.address;
+        document.getElementById('modalPropertyType').textContent = lead.property.property_type;
+        document.getElementById('modalPrice').textContent = `R${parseFloat(lead.property.price).toLocaleString()}`;
+        document.getElementById('modalBedrooms').textContent = lead.property.total_bedrooms;
+        document.getElementById('modalBathrooms').textContent = lead.property.total_bathrooms;
+        document.getElementById('modalGarages').textContent = lead.property.total_garages || 'N/A';
+        document.getElementById('modalSpotter').textContent = `${lead.spotter.first_name} ${lead.spotter.last_name}`;
+        document.getElementById('modalCreatedDate').textContent = new Date(lead.created_at).toLocaleDateString();
+        document.getElementById('modalStatus').innerHTML = `<span class="status-badge status-${lead.status.toLowerCase()}">${lead.status}</span>`;
+        document.getElementById('modalAssignedAgent').textContent = lead.assigned_agent ? 
+            `${lead.assigned_agent.first_name} ${lead.assigned_agent.last_name}` : 'Not assigned';
+        document.getElementById('modalNotes').textContent = lead.notes || 'No notes available';
+
+        new bootstrap.Modal(document.getElementById('leadDetailsModal')).show();
+    }
+}
+
+function showAssignAgentModal(leadId) {
+    currentLeadId = leadId;
+    selectedAgentId = null;
+    const agentsData = JSON.parse(document.getElementById('agents-data').textContent);
+    
+    // Reset and populate agent list
+    const agentList = document.getElementById('agentList');
+    agentList.innerHTML = agentsData.map(agent => `
+        <div class="agent-item" onclick="selectAgent('${agent.id}', this)">
+            <div class="fw-medium">${agent.first_name} ${agent.last_name}</div>
+            <div class="text-muted small">${agent.email}</div>
+        </div>
+    `).join('');
+
+    document.getElementById('assignButton').disabled = true;
+    new bootstrap.Modal(document.getElementById('assignAgentModal')).show();
+}
+
+function selectAgent(agentId, element) {
+    selectedAgentId = agentId;
+    
+    // Update UI
+    document.querySelectorAll('.agent-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    
+    document.getElementById('assignButton').disabled = false;
+}
+
+function filterAgents(searchTerm) {
+    const agentsData = JSON.parse(document.getElementById('agents-data').textContent);
+    const filteredAgents = agentsData.filter(agent => 
+        `${agent.first_name} ${agent.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        agent.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const agentList = document.getElementById('agentList');
+    agentList.innerHTML = filteredAgents.map(agent => `
+        <div class="agent-item" onclick="selectAgent('${agent.id}', this)">
+            <div class="fw-medium">${agent.first_name} ${agent.last_name}</div>
+            <div class="text-muted small">${agent.email}</div>
+        </div>
+    `).join('');
+}
+
+async function assignAgent() {
+    if (!selectedAgentId || !currentLeadId) return;
+
+    // Show loading state
+    const assignButton = document.getElementById('assignButton');
+    assignButton.disabled = true;
+    assignButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Assigning...';
+   
+    try {
+        const response = await fetch(`/api/leads/${currentLeadId}/assign-agent/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authToken}`
+            },
+            body: JSON.stringify({
+                agent_id: selectedAgentId
+            })
+        });
+       
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Close the modal first
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assignAgentModal'));
+            modal.hide();
+
+            // Show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Agent Assigned',
+                text: 'The lead has been successfully assigned to the agent.',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK'
+            });
+
+            // Reload page
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to assign agent');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Assignment Failed',
+            text: error.message || 'An error occurred while assigning the agent. Please try again.',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'OK'
+        });
+    } finally {
+        // Reset button state
+        assignButton.disabled = false;
+        assignButton.innerHTML = 'Assign Agent';
+    }
+}
+</script>
+{% endblock %}

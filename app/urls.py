@@ -18,4 +18,5 @@ urlpatterns = [
 	    # Agency routes
 	    path('agency/', views.agency_dashboard, name='agency'),
 	    path('agency/agents/', views.agency_agents, name='agency_agents'),
+	    path('agency/leads/', views.agency_leads, name='agency_leads'),
 ]

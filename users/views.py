@@ -564,6 +564,7 @@ def verify_email(request, token):
         return Response({
             'error': 'Verification failed. Please try again.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @permission_classes([AllowAny])
 def setup_agent_password(request, token):
     try:
@@ -590,9 +591,9 @@ def setup_agent_password(request, token):
         })
 
 @api_view(['POST'])
-@permission_classes([])
+@permission_classes([AllowAny])
 def set_agent_password(request):
-    print("Invoked!")
+    print(f"User: {request.user}, Authenticated: {request.user.is_authenticated}")
     try:
         token = request.data.get('token')
         password = request.data.get('password')

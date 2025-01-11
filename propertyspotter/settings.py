@@ -123,9 +123,9 @@ AUTH_USER_MODEL = 'users.CustomUser'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'users.authentication.BodyTokenAuthentication',  # Use JWT authentication
     ),
     'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
         'rest_framework.permissions.IsAuthenticated',  # Restrict routes by default
     )
 }
@@ -180,3 +180,38 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL').strip()
 
 SITE_URL = os.getenv('WEBURL')
 SITE_NAME = os.getenv('SITE_NAME')
+
+"""
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rest_framework': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+"""

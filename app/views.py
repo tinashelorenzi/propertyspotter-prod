@@ -450,6 +450,7 @@ def agency_payments(request):
         # For each successful lead, fetch its commission details
         payments_data = []
         for lead in leads:
+            #print(f"Processing lead: {lead}")
             try:
                 commission_response = requests.get(
                     f'{base_url}/api/commissions/by-lead/{lead["id"]}/',
@@ -463,7 +464,10 @@ def agency_payments(request):
                         'id': commission['id'],
                         'lead_id': lead['id'],
                         'property': lead['property'],
+                        'leadData': lead,
                         'spotter': lead['spotter'],
+                        'property': lead['property'],
+                        'spotter_id': lead['spotter']['id'],
                         'assigned_agent': lead['assigned_agent'],
                         'created_at': commission['created_at'],
                         'paid_at': commission['paid_at'],
@@ -480,6 +484,9 @@ def agency_payments(request):
                         'lead_id': lead['id'],
                         'property': lead['property'],
                         'spotter': lead['spotter'],
+                        'property': lead['property'],
+                        'leadData': lead,
+                        'spotter_id': lead['spotter']['id'],
                         'assigned_agent': lead['assigned_agent'],
                         'created_at': None,
                         'paid_at': None,
@@ -538,44 +545,7 @@ def process_commission_payment(request):
         payment_reference = request.data.get('payment_reference')
         payment_date = request.data.get('payment_date')
 
-        if not all([commission_id, lead_id, property_id, payment_reference, payment_date]):
-            return Response({
-                "error": "Missing required fields"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Update Commission
-        commission_response = requests.post(
-            f"{base_url}/api/commissions/{commission_id}/mark-paid/",
-            headers={'Authorization': f'Bearer {request.auth}'},
-            data={'payment_reference': payment_reference, 'payment_date': payment_date}
-        )
-        if not commission_response.ok:
-            raise Exception("Failed to update commission")
-
-        # Update Lead
-        lead_response = requests.post(
-            f"{base_url}/api/leads/{lead_id}/mark-paid/",
-            headers={'Authorization': f'Bearer {request.auth}'}
-        )
-        if not lead_response.ok:
-            raise Exception("Failed to update lead")
-
-        # Update Property
-        property_response = requests.post(
-            f"{base_url}/api/properties/{property_id}/mark-paid/",
-            headers={'Authorization': f'Bearer {request.auth}'}
-        )
-        if not property_response.ok:
-            raise Exception("Failed to update property")
-
-        return Response({
-            "message": "Commission payment processed successfully",
-            "commission": commission_response.json(),
-            "lead": lead_response.json(),
-            "property": property_response.json()
-        })
-
-    except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # Send POST request to /api/commissions/<commissionID>/markPaid
+        pass
+    except:
+        pass

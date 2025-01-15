@@ -230,7 +230,7 @@
     </button>
     {% else %}
     <button class="btn btn-sm btn-success" 
-            onclick="showRegisterPaymentModal('{{ payment.lead_id }}')">
+            onclick="showRegisterPaymentModal('{{ payment.leadData.id|safe }}', '{{ payment.leadData.spotter.id|safe }}', '{{ payment.leadData.property.price|safe }}')">
         <i class="fas fa-money-check me-1"></i>Register Payment
     </button>
     {% endif %}
@@ -600,49 +600,38 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
-async function showRegisterPaymentModal(leadId) {
-    console.log('Opening register modal for lead:', leadId); // Debug log
-    
-    const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
-    const payment = paymentsData.find(p => p.lead_id === leadId);
-    
-    console.log('Found payment data:', payment); // Debug log
-    
-    if (payment) {
-        try {
-            // Store IDs for submission
-            document.getElementById('paymentLeadId').value = payment.lead_id;
-            document.getElementById('paymentPropertyId').value = payment.property.id;
-            
-            // Calculate and display commission amount
-            const propertyPrice = parseFloat(payment.property.price);
-            const commissionAmount = propertyPrice * 0.075; // 7.5%
-            document.getElementById('commissionAmount').value = commissionAmount.toLocaleString();
-            
-            // Set today as default payment date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('paymentDate').value = today;
-            
-            // Reset other fields
-            document.getElementById('paymentReference').value = '';
-            document.getElementById('paymentNotes').value = '';
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('registerPaymentModal'));
-            modal.show();
-            
-        } catch (error) {
-            console.error('Error showing register modal:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to open register payment modal. Please try again.'
-            });
-        }
+async function showRegisterPaymentModal(leadID, spotterID, propertyPrice) {
+    if (leadID && spotterID && propertyPrice) {
+        // Store IDs for submission
+        document.getElementById('paymentCommissionId').value = spotterID;
+        document.getElementById('paymentLeadId').value = leadID;
+
+        // Calculate and display commission amount
+        const commissionAmount = parseFloat(propertyPrice) * 0.075; // 7.5%
+        document.getElementById('commissionAmount').value = commissionAmount.toLocaleString();
+
+        // Set today as default payment date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('paymentDate').value = today;
+
+        // Reset other fields
+        document.getElementById('paymentReference').value = '';
+        document.getElementById('paymentNotes').value = '';
+
+        // Show modal
+        new bootstrap.Modal(document.getElementById('registerPaymentModal')).show();
     } else {
-        console.error('Payment not found for lead:', leadId);
+        console.error('Missing required arguments for showRegisterPaymentModal');
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Unable to display the modal. Missing required payment information.',
+            confirmButtonColor: '#DC3545',
+            confirmButtonText: 'OK'
+        });
     }
 }
+
 
 async function submitPayment() {
     const form = document.getElementById('paymentForm');
@@ -652,16 +641,42 @@ async function submitPayment() {
     }
 
     try {
+        // Get the payment context data
+        const paymentsData = JSON.parse(document.getElementById('payments-data').textContent);
+        const leadId = document.getElementById('paymentLeadId').value;
+        const propertyId = document.getElementById('paymentPropertyId').value;
+        
+        console.log('Lead ID:', leadId);
+        console.log('Property ID:', propertyId);
+        console.log('Payments Data:', paymentsData);
+        
+        const payment = paymentsData.find(p => p.lead_id === leadId);
+        console.log('Found Payment:', payment);
+
+        if (!payment) {
+            throw new Error('Payment data not found');
+        }
+
+        if (!payment.property || !payment.property.id) {
+            throw new Error('Property information is missing');
+        }
+
+        // Get and clean the commission amount
+        const commissionAmountStr = document.getElementById('commissionAmount').value;
+        const amount = parseFloat(commissionAmountStr.replace(/[^0-9.]/g, ''));
+
         const paymentData = {
-            commission_id: document.getElementById('paymentCommissionId').value,
-            lead_id: document.getElementById('paymentLeadId').value,
-            property_id: document.getElementById('paymentPropertyId').value,
+            spotter_id: payment.spotter.id,
+            property_id: payment.property.id, // Use the ID directly from the payment object
+            amount: amount,
             payment_reference: document.getElementById('paymentReference').value,
-            payment_date: document.getElementById('paymentDate').value,
-            notes: document.getElementById('paymentNotes').value
+            payment_date: new Date(document.getElementById('paymentDate').value).toISOString(),
+            notes: document.getElementById('paymentNotes').value || null
         };
 
-        const response = await fetch('/api/commissions/process-payment/', {
+        console.log('Submitting payment data:', paymentData);
+
+        const response = await fetch('/api/commissions/create/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -670,11 +685,16 @@ async function submitPayment() {
             body: JSON.stringify(paymentData)
         });
 
+        const data = await response.json();
+        console.log('API Response:', data);
+
         if (response.ok) {
             // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('registerPaymentModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('registerPaymentModal'));
+            if (modal) {
+                modal.hide();
+            }
             
-            // Show success message
             await Swal.fire({
                 icon: 'success',
                 title: 'Payment Registered',
@@ -683,14 +703,24 @@ async function submitPayment() {
                 confirmButtonText: 'OK'
             });
 
-            // Reload page
             window.location.reload();
         } else {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to register payment');
+            let errorMessage = 'Failed to register payment';
+            
+            if (data.error) {
+                errorMessage = data.error;
+            } else if (typeof data === 'object') {
+                const errors = Object.entries(data)
+                    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
+                    .join('\n');
+                errorMessage = errors || errorMessage;
+            }
+
+            throw new Error(errorMessage);
         }
     } catch (error) {
         console.error('Error:', error);
+        
         Swal.fire({
             icon: 'error',
             title: 'Registration Failed',
@@ -699,6 +729,23 @@ async function submitPayment() {
             confirmButtonText: 'OK'
         });
     }
+}
+
+// Helper function to get CSRF token if needed
+function getCsrfToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 </script>
 {% endblock %}

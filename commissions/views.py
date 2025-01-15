@@ -6,6 +6,11 @@ from .models import Commission
 from .serializers import CommissionSerializer
 from leads.models import Lead
 
+from rest_framework.views import APIView
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from .serializers import CommissionCreateSerializer
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_all_commissions(request):
@@ -75,3 +80,84 @@ def mark_commission_paid(request, commission_id):
             {"error": "Commission not found"}, 
             status=status.HTTP_404_NOT_FOUND
         )
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def process_payment(request):
+    import requests
+    from commissions.models import Commission
+    from leads.models import Lead
+    from properties.models import Property
+    from rest_framework.response import Response
+    from rest_framework import status
+
+    base_url = request.build_absolute_uri('/')[:-1]
+    try:
+        commission_id = request.data.get('commission_id')
+        lead_id = request.data.get('lead_id')
+        property_id = request.data.get('property_id')
+        payment_reference = request.data.get('payment_reference')
+        payment_date = request.data.get('payment_date')
+
+        if not all([commission_id, lead_id, property_id, payment_reference, payment_date]):
+            return Response({
+                "error": "Missing required fields"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update Commission
+        commission_response = requests.post(
+            f"{base_url}/api/commissions/{commission_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'},
+            data={'payment_reference': payment_reference, 'payment_date': payment_date}
+        )
+        if not commission_response.ok:
+            raise Exception("Failed to update commission")
+
+        # Update Lead
+        lead_response = requests.post(
+            f"{base_url}/api/leads/{lead_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'}
+        )
+        if not lead_response.ok:
+            raise Exception("Failed to update lead")
+
+        # Update Property
+        property_response = requests.post(
+            f"{base_url}/api/properties/{property_id}/mark-paid/",
+            headers={'Authorization': f'Bearer {request.auth}'}
+        )
+        if not property_response.ok:
+            raise Exception("Failed to update property")
+
+        return Response({
+            "message": "Commission payment processed successfully",
+            "commission": commission_response.json(),
+            "lead": lead_response.json(),
+            "property": property_response.json()
+        })
+
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CommissionCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(csrf_exempt)
+    def post(self, request):
+        serializer = CommissionCreateSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            try:
+                commission = serializer.save()
+                return Response({
+                    'message': 'Commission created successfully',
+                    'commission_id': commission.id
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    'error': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,0 +1,664 @@
+{% extends 'base_agency_admin.html' %}
+
+{% block title %}Properties - {{ AGENCYDATA.name }}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .properties-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .property-image {
+        width: 120px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    .property-info {
+        max-width: 300px;
+    }
+
+    .property-address {
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 2px;
+        font-size: 0.95rem;
+    }
+
+    .property-price {
+        color: #059669;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .property-meta {
+        display: flex;
+        gap: 12px;
+        color: #6B7280;
+        font-size: 0.875rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .status-new-submission {
+        background-color: #EFF6FF;
+        color: #3B82F6;
+    }
+
+    .status-assigned {
+        background-color: #F3F4F6;
+        color: #4B5563;
+    }
+
+    .status-sold {
+        background-color: #ECFDF5;
+        color: #059669;
+    }
+
+    .status-commission-paid {
+        background-color: #FEF3C7;
+        color: #D97706;
+    }
+
+    .spotter-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .spotter-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .spotter-avatar-placeholder {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #E5E7EB;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9CA3AF;
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .modal-property-image {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .property-images-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .property-images-grid img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .property-images-grid img:hover {
+        opacity: 0.8;
+    }
+
+    .detail-section {
+        background-color: #F9FAFB;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .detail-label {
+        font-size: 0.875rem;
+        color: #6B7280;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+        font-weight: 500;
+        color: #374151;
+    }
+
+    /* Stats cards */
+    .stats-container {
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stat-label {
+        color: #6B7280;
+        font-size: 0.875rem;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .stat-trend {
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .stat-trend.positive {
+        color: #059669;
+    }
+
+    .stat-trend.negative {
+        color: #DC2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Properties</h4>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-container">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-label">Total Properties</div>
+                    <div class="stat-value">{{ summary_stats.total_properties }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-label">New Submissions</div>
+                    <div class="stat-value">{{ summary_stats.new_submissions }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-label">Commission Paid</div>
+                    <div class="stat-value">{{ summary_stats.commission_paid }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-label">Total Property Value</div>
+                    <div class="stat-value">R{{ summary_stats.total_value|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Property Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="New Submission">New Submission</option>
+                    <option value="Assigned">Assigned</option>
+                    <option value="Sold">Sold</option>
+                    <option value="Commission Paid">Commission Paid</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Property Type</label>
+                <select class="form-select" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="House">House</option>
+                    <option value="Apartment">Apartment</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Land">Land</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" id="searchInput" 
+                       placeholder="Search by address, spotter name...">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="applyFilters()">
+                    <i class="fas fa-filter me-2"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Table -->
+    <div class="properties-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Spotter</th>
+                        <th>Assigned Agent</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Listed Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for property in properties %}
+                    <tr>
+                        <td>
+                            <div class="d-flex gap-3">
+                                {% if property.property.featured_image %}
+                                    <img src="{{ property.property.featured_image }}" 
+                                         alt="Property" class="property-image">
+                                {% else %}
+                                    <div class="property-image bg-light d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-home text-muted fa-2x"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="property-info">
+                                    <div class="property-address">{{ property.property.address }}</div>
+                                    <div class="property-price">R{{ property.property.price|floatformat:2 }}</div>
+                                    <div class="property-meta">
+                                        <div class="meta-item">
+                                            <i class="fas fa-bed"></i>
+                                            {{ property.property.total_bedrooms }}
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-bath"></i>
+                                            {{ property.property.total_bathrooms }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="spotter-info">
+                                {% if property.spotter.profile_image_url %}
+                                    <img src="{{ property.spotter.profile_image_url }}" 
+                                         alt="Spotter" class="spotter-avatar">
+                                {% else %}
+                                    <div class="spotter-avatar-placeholder">
+                                        {{ property.spotter.first_name|first }}{{ property.spotter.last_name|first }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-medium">
+                                        {{ property.spotter.first_name }} {{ property.spotter.last_name }}
+                                    </div>
+                                    <div class="text-muted small">{{ property.spotter.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if property.assigned_agent %}
+                                {{ property.assigned_agent.first_name }} {{ property.assigned_agent.last_name }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ property.property.property_type }}</td>
+                        <td>
+                            <span class="status-badge status-{{ property.property.status|lower|slugify }}">
+                                {{ property.property.status }}
+                            </span>
+                        </td>
+                        <td>{{ property.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="showPropertyDetails('{{ property.id }}')">
+                                <i class="fas fa-eye me-1"></i>Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-home mb-3 fa-2x"></i>
+                                <p class="mb-0">No properties found</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Property Details Modal -->
+<div class="modal fade" id="propertyDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Property Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Property Images -->
+                <img id="modalMainImage" src="" alt="Property" class="modal-property-image mb-3">
+                <div id="propertyImagesGrid" class="property-images-grid"></div>
+
+                <!-- Property Information -->
+                <div class="detail-section mt-4">
+                    <h6 class="mb-3">Property Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="detail-label">Address</div>
+                            <div id="modalAddress" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Price</div>
+                            <div id="modalPrice" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Property Type</div>
+                            <div id="modalPropertyType" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Status</div>
+                            <div id="modalStatus" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Bedrooms</div>
+                            <div id="modalBedrooms" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Bathrooms</div>
+                            <div id="modalBathrooms" class="detail-value"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Owner Information -->
+                <div class="detail-section">
+                    <h6 class="mb-3">Owner Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="detail-label">Owner Name</div>
+                            <div id="modalOwnerName" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Contact</div>
+                            <div id="modalOwnerContact" class="detail-value"></div>
+                        </div>
+			</div>
+                </div>
+
+                <!-- Lead Information -->
+                <div class="detail-section">
+                    <h6 class="mb-3">Lead Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="detail-label">Potential</div>
+                            <div id="modalPotential" class="detail-value"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Source</div>
+                            <div id="modalSource" class="detail-value"></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="detail-label">Notes</div>
+                            <div id="modalNotes" class="detail-value"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{ properties|json_script:"properties-data" }}
+
+<script>
+let filteredPropertiesData = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the filtered data
+    const propertiesData = JSON.parse(document.getElementById('properties-data').textContent);
+    filteredPropertiesData = [...propertiesData];
+    
+    // Initialize modals
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modalEl => {
+        new bootstrap.Modal(modalEl);
+    });
+});
+
+function showPropertyDetails(propertyId) {
+    const propertiesData = JSON.parse(document.getElementById('properties-data').textContent);
+    const property = propertiesData.find(p => p.id === propertyId);
+    
+    if (property) {
+        // Update main image
+        const mainImage = document.getElementById('modalMainImage');
+        mainImage.src = property.property.featured_image || '/static/images/placeholder.jpg';
+        mainImage.alt = property.property.address;
+
+        // Update property images grid
+        const imagesGrid = document.getElementById('propertyImagesGrid');
+        if (property.property.property_images && property.property.property_images.length > 0) {
+            imagesGrid.innerHTML = property.property.property_images
+                .map(img => `
+                    <img src="${img.image}" 
+                         alt="Property Image" 
+                         onclick="updateMainImage('${img.image}')">
+                `).join('');
+        } else {
+            imagesGrid.innerHTML = '<p class="text-muted">No additional images available</p>';
+        }
+
+        // Update property information
+        document.getElementById('modalAddress').textContent = property.property.address;
+        document.getElementById('modalPrice').textContent = `R${parseFloat(property.property.price).toLocaleString()}`;
+        document.getElementById('modalPropertyType').textContent = property.property.property_type;
+        document.getElementById('modalStatus').innerHTML = `
+            <span class="status-badge status-${property.property.status.toLowerCase().replace(' ', '-')}">
+                ${property.property.status}
+            </span>
+        `;
+        document.getElementById('modalBedrooms').textContent = property.property.total_bedrooms;
+        document.getElementById('modalBathrooms').textContent = property.property.total_bathrooms;
+
+        // Update owner information
+        document.getElementById('modalOwnerName').textContent = property.property.owner_name || 'Not provided';
+        document.getElementById('modalOwnerContact').textContent = property.property.owner_contact || 'Not provided';
+
+        // Update lead information
+        document.getElementById('modalPotential').textContent = property.potential || 'Not specified';
+        document.getElementById('modalSource').textContent = property.source || 'Not specified';
+        document.getElementById('modalNotes').textContent = property.notes || 'No notes available';
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('propertyDetailsModal'));
+        modal.show();
+    }
+}
+
+function updateMainImage(imageUrl) {
+    const mainImage = document.getElementById('modalMainImage');
+    mainImage.src = imageUrl;
+}
+
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const propertyType = document.getElementById('typeFilter').value;
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    const propertiesData = JSON.parse(document.getElementById('properties-data').textContent);
+    let filteredProperties = [...propertiesData];
+
+    // Apply status filter
+    if (status) {
+        filteredProperties = filteredProperties.filter(p => 
+            p.property.status.toLowerCase() === status.toLowerCase()
+        );
+    }
+
+    // Apply property type filter
+    if (propertyType) {
+        filteredProperties = filteredProperties.filter(p => 
+            p.property.property_type.toLowerCase() === propertyType.toLowerCase()
+        );
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+        filteredProperties = filteredProperties.filter(p => 
+            p.property.address.toLowerCase().includes(searchTerm) ||
+            `${p.spotter.first_name} ${p.spotter.last_name}`.toLowerCase().includes(searchTerm) ||
+            (p.assigned_agent && 
+             `${p.assigned_agent.first_name} ${p.assigned_agent.last_name}`.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Update filtered data and refresh table
+    filteredPropertiesData = filteredProperties;
+    updateTable();
+}
+
+function updateTable() {
+    const tbody = document.querySelector('table tbody');
+    
+    if (filteredPropertiesData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-home mb-3 fa-2x"></i>
+                        <p class="mb-0">No properties found</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filteredPropertiesData.map(property => `
+        <tr>
+            <td>
+                <div class="d-flex gap-3">
+                    ${property.property.featured_image ? 
+                        `<img src="${property.property.featured_image}" alt="Property" class="property-image">` :
+                        `<div class="property-image bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-home text-muted fa-2x"></i>
+                         </div>`
+                    }
+                    <div class="property-info">
+                        <div class="property-address">${property.property.address}</div>
+                        <div class="property-price">R${parseFloat(property.property.price).toLocaleString()}</div>
+                        <div class="property-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-bed"></i>
+                                ${property.property.total_bedrooms}
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-bath"></i>
+                                ${property.property.total_bathrooms}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="spotter-info">
+                    ${property.spotter.profile_image_url ?
+                        `<img src="${property.spotter.profile_image_url}" alt="Spotter" class="spotter-avatar">` :
+                        `<div class="spotter-avatar-placeholder">
+                            ${property.spotter.first_name[0]}${property.spotter.last_name[0]}
+                         </div>`
+                    }
+                    <div>
+                        <div class="fw-medium">${property.spotter.first_name} ${property.spotter.last_name}</div>
+                        <div class="text-muted small">${property.spotter.email}</div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                ${property.assigned_agent ? 
+                    `${property.assigned_agent.first_name} ${property.assigned_agent.last_name}` :
+                    '<span class="text-muted">Not assigned</span>'
+                }
+            </td>
+            <td>${property.property.property_type}</td>
+            <td>
+                <span class="status-badge status-${property.property.status.toLowerCase().replace(' ', '-')}">
+                    ${property.property.status}
+                </span>
+            </td>
+            <td>${new Date(property.created_at).toLocaleDateString('en-ZA')}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" 
+                        onclick="showPropertyDetails('${property.id}')">
+                    <i class="fas fa-eye me-1"></i>Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Event listeners for filter inputs
+document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('typeFilter').addEventListener('change', applyFilters);
+
+// Debounce function for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %}

@@ -20,4 +20,5 @@ urlpatterns = [
 	    path('agency/agents/', views.agency_agents, name='agency_agents'),
 	    path('agency/leads/', views.agency_leads, name='agency_leads'),
 	    path('agency/payments/', views.agency_payments, name='agency_payments'),
+	    path('agency/properties/', views.agency_properties, name='agency_properties'),
 ]

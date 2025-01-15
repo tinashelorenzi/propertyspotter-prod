@@ -530,26 +530,52 @@ def agency_payments(request):
 
 
 
-#main Processing endpoints
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def process_commission_payment(request):
-    import requests
-    from commissions.models import Commission
-    from leads.models import Lead
-    from properties.models import Property
-    from rest_framework.response import Response
-    from rest_framework import status
-
+@securedRoute
+def agency_properties(request):
+    """
+    View to display all properties assigned to an agency.
+    Protected by securedRoute decorator.
+    """
     base_url = request.build_absolute_uri('/')[:-1]
-    try:
-        commission_id = request.data.get('commission_id')
-        lead_id = request.data.get('lead_id')
-        property_id = request.data.get('property_id')
-        payment_reference = request.data.get('payment_reference')
-        payment_date = request.data.get('payment_date')
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
 
-        # Send POST request to /api/commissions/<commissionID>/markPaid
-        pass
-    except:
-        pass
+    if not agency_data:
+        return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # Fetch all leads for the agency
+        leads_response = requests.get(
+            f'{base_url}/api/leads/by-agency/{agency_data["id"]}/',
+            headers=headers
+        )
+
+        if not leads_response.ok:
+            print(f"Error fetching leads: {leads_response.status_code}")
+            properties_data = []
+        else:
+            properties_data = leads_response.json()
+
+        # Calculate summary statistics
+        summary_stats = {
+            'total_properties': len(properties_data),
+            'new_submissions': sum(1 for p in properties_data if p['property']['status'] == 'New Submission'),
+            'assigned': sum(1 for p in properties_data if p['property']['status'] == 'Assigned'),
+            'commission_paid': sum(1 for p in properties_data if p['property']['status'] == 'Commission Paid'),
+            'total_value': sum(float(p['property']['price']) for p in properties_data if p['property']['price']),
+        }
+
+        context = {
+            'agency': agency_data,
+            'properties': properties_data,
+            'summary_stats': summary_stats
+        }
+
+        # Pass the data to the template
+        return render(request, 'agency_properties.html', context)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return redirect('error_page')

@@ -460,6 +460,7 @@ def agency_payments(request):
                 if commission_response.ok:
                     commission = commission_response.json()
                     # Combine lead and commission data
+                    print(f"Commission: {commission}")
                     payment_info = {
                         'id': commission['id'],
                         'lead_id': lead['id'],
@@ -468,6 +469,7 @@ def agency_payments(request):
                         'spotter': lead['spotter'],
                         'property': lead['property'],
                         'spotter_id': lead['spotter']['id'],
+                        'commissionAmount': lead['property']['commission'],
                         'assigned_agent': lead['assigned_agent'],
                         'created_at': commission['created_at'],
                         'paid_at': commission['paid_at'],
@@ -487,6 +489,8 @@ def agency_payments(request):
                         'property': lead['property'],
                         'leadData': lead,
                         'spotter_id': lead['spotter']['id'],
+                        'commissionAmount': lead['property']['commission'],
+                        #'commissionAmount': commission['amount'],
                         'assigned_agent': lead['assigned_agent'],
                         'created_at': None,
                         'paid_at': None,
@@ -496,7 +500,7 @@ def agency_payments(request):
                         'notes': None
                     }
                     payments_data.append(payment_info)
-                    print(f"Error fetching commission for lead {lead['id']}: {commission_response.status_code}")
+                    print("Property comission amount: ", lead['property']['commission'])
 
             except Exception as e:
                 print(f"Error processing commission for lead {lead['id']}: {str(e)}")

@@ -213,7 +213,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <div class="commission-amount">R{{ payment.amount|floatformat:2 }}</div>
+                            <div class="commission-amount">R{{ payment.commissionAmount|floatformat:2 }}</div>
                             <div class="text-muted small">5% of total commission</div>
                         </td>
                         <td>
@@ -230,7 +230,7 @@
     </button>
     {% else %}
     <button class="btn btn-sm btn-success" 
-            onclick="showRegisterPaymentModal('{{ payment.leadData.id|safe }}', '{{ payment.leadData.spotter.id|safe }}', '{{ payment.leadData.property.price|safe }}')">
+            onclick="showRegisterPaymentModal('{{ payment.leadData.id|safe }}', '{{ payment.leadData.spotter.id|safe }}', '{{ payment.leadData.property.price|safe }}', '{{ payment.commissionAmount|safe }}')">
         <i class="fas fa-money-check me-1"></i>Register Payment
     </button>
     {% endif %}
@@ -600,14 +600,14 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
-async function showRegisterPaymentModal(leadID, spotterID, propertyPrice) {
+async function showRegisterPaymentModal(leadID, spotterID, propertyPrice,commissionAmountPrice) {
     if (leadID && spotterID && propertyPrice) {
         // Store IDs for submission
         document.getElementById('paymentCommissionId').value = spotterID;
         document.getElementById('paymentLeadId').value = leadID;
 
         // Calculate and display commission amount
-        const commissionAmount = parseFloat(propertyPrice) * 0.075; // 7.5%
+        const commissionAmount = parseFloat(commissionAmountPrice) * 0.075; // 7.5%
         document.getElementById('commissionAmount').value = commissionAmount.toLocaleString();
 
         // Set today as default payment date

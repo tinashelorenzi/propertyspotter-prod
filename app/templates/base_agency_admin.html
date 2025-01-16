@@ -232,12 +232,6 @@
                             <span>Properties</span>
                         </a>
                     </li>
-                    <li class="{% if request.resolver_match.url_name == 'history' %}active{% endif %}">
-                        <a href="#">
-                            <i class="fas fa-history"></i>
-                            <span>History</span>
-                        </a>
-                    </li>
                 </ul>
             </div>
 
@@ -245,9 +239,21 @@
                 <span class="menu-header">SETTINGS</span>
                 <ul class="list-unstyled">
                     <li class="{% if request.resolver_match.url_name == 'agency_settings' %}active{% endif %}">
-                        <a href="#">
+                        <a href="/agency/settings/">
                             <i class="fas fa-cog"></i>
                             <span>Agency Settings</span>
+                        </a>
+                    </li>
+                    <li class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <a href="/agency/profile/">
+                            <i class="fas fa-user"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/logout/">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
                         </a>
                     </li>
                 </ul>

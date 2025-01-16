@@ -579,3 +579,92 @@ def agency_properties(request):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return redirect('error_page')
+
+@securedRoute
+def agency_settings(request):
+    """
+    View to display and manage agency settings.
+    Protected by securedRoute decorator.
+    """
+    base_url = request.build_absolute_uri('/')[:-1]
+    access_token = request.session.get('access_token')
+    agency_data = request.session.get('agencyData')
+
+    if not agency_data:
+        return redirect('login')
+
+    headers = {'Authorization': f'Bearer {access_token}'}
+
+    try:
+        # Fetch detailed agency information
+        agency_response = requests.get(
+            f'{base_url}/api/agency/update/{agency_data["id"]}/',
+            headers=headers
+        )
+
+        if not agency_response.ok:
+            print(f"Error fetching agency details: {agency_response.status_code}")
+            return redirect('error_page')
+
+        agency_details = agency_response.json()
+
+        # Fetch agency stats if needed
+        # Example: total agents, total properties, etc.
+        try:
+            # Fetch all agents for the agency
+            agents_response = requests.get(
+                f'{base_url}/api/agents/by-agency/{agency_data["id"]}/',
+                headers=headers
+            )
+            
+            if agents_response.ok:
+                agents = agents_response.json()
+                total_agents = len(agents)
+            else:
+                total_agents = 0
+
+            # Fetch agency's properties/leads count
+            leads_response = requests.get(
+                f'{base_url}/api/leads/by-agency/{agency_data["id"]}/',
+                headers=headers
+            )
+            
+            if leads_response.ok:
+                leads = leads_response.json()
+                total_properties = len(leads)
+            else:
+                total_properties = 0
+
+            # Calculate additional stats
+            agency_stats = {
+                'total_agents': total_agents,
+                'total_properties': total_properties,
+                'active_agents': sum(1 for agent in agents if agent.get('is_active', False)) if agents_response.ok else 0,
+                'pending_properties': sum(1 for lead in leads if lead['status'] == 'New Submission') if leads_response.ok else 0
+            }
+
+        except Exception as e:
+            print(f"Error fetching agency stats: {str(e)}")
+            agency_stats = {
+                'total_agents': 0,
+                'total_properties': 0,
+                'active_agents': 0,
+                'pending_properties': 0
+            }
+
+        context = {
+            'agency': agency_details,
+            'stats': agency_stats,
+            'is_principal': request.user == agency_data.get('principal_user'),
+            'AGENCYDATA': agency_data  # Required for base template
+        }
+
+        return render(request, 'agency_settings.html', context)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return redirect('error_page')
+
+@securedRoute
+def agency_admin_profile(request):
+    return render(request, 'agency_admin_profile.html')

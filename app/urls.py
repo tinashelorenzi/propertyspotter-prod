@@ -21,4 +21,6 @@ urlpatterns = [
 	    path('agency/leads/', views.agency_leads, name='agency_leads'),
 	    path('agency/payments/', views.agency_payments, name='agency_payments'),
 	    path('agency/properties/', views.agency_properties, name='agency_properties'),
+	    path('agency/settings/', views.agency_settings, name='agency_settings'),
+	    path('agency/profile/', views.agency_admin_profile, name='agency_admin_profile'),
 ]

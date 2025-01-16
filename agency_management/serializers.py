@@ -82,3 +82,49 @@ class AgentSerializerAgency(serializers.ModelSerializer):
             Q(assigned_agent=obj),
             Q(status='Commission_Paid') | Q(status='Sold')
         ).count()
+
+class AgencyUpdateSerializer(serializers.ModelSerializer):
+    logo = serializers.ImageField(required=False)
+    
+    class Meta:
+        model = Agency
+        fields = [
+            'id', 'name', 'email', 'phone', 'address', 
+            'logo', 'logo_url', 'license_valid_until'
+        ]
+        read_only_fields = ['id', 'logo_url']  # These fields cannot be modified directly
+
+    def validate_email(self, value):
+        """
+        Check if email is unique, excluding current instance
+        """
+        instance = self.instance
+        if Agency.objects.exclude(pk=instance.pk).filter(email=value).exists():
+            raise serializers.ValidationError("An agency with this email already exists.")
+        return value
+
+    def validate_name(self, value):
+        """
+        Check if name is unique, excluding current instance
+        """
+        instance = self.instance
+        if Agency.objects.exclude(pk=instance.pk).filter(name=value).exists():
+            raise serializers.ValidationError("An agency with this name already exists.")
+        return value
+
+    def update(self, instance, validated_data):
+        """
+        Handle the logo upload separately
+        """
+        # Handle logo upload if provided
+        if 'logo' in validated_data:
+            logo = validated_data.pop('logo')
+            instance.logo = logo
+            # logo_url will be updated in the model's save method
+        
+        # Update other fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance

@@ -1,0 +1,294 @@
+{% extends 'base_agency_admin.html' %}
+
+{% block title %}Agency Settings - {{ AGENCYDATA.name }}{% endblock %}
+
+{% block custom_css %}
+<style>
+    .settings-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .agency-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    .logo-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 10px;
+        background-color: #F3F4F6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9CA3AF;
+        font-size: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .section-title {
+        color: #111827;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .readonly-field {
+        background-color: #F9FAFB;
+        cursor: not-allowed;
+    }
+
+    .stats-card {
+        background: #F9FAFB;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .stats-label {
+        color: #6B7280;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .stats-value {
+        color: #111827;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    #logoPreview {
+        margin-top: 10px;
+        display: none;
+    }
+
+    #currentLogo {
+        margin-bottom: 1rem;
+    }
+
+    .save-feedback {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        margin-left: 1rem;
+    }
+
+    .save-feedback.success {
+        color: #059669;
+    }
+
+    .save-feedback.error {
+        color: #DC2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Agency Settings</h4>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-label">Total Agents</div>
+                <div class="stats-value">{{ stats.total_agents }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-label">Active Agents</div>
+                <div class="stats-value">{{ stats.active_agents }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-label">Total Properties</div>
+                <div class="stats-value">{{ stats.total_properties }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-label">Pending Properties</div>
+                <div class="stats-value">{{ stats.pending_properties }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Form -->
+    <div class="settings-container">
+        <form id="agencySettingsForm" onsubmit="return saveSettings(event)">
+            <!-- Agency Information -->
+            <div class="form-section">
+                <div class="section-title">Agency Information</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Agency Name</label>
+                        <input type="text" class="form-control" id="agencyName" 
+                               value="{{ agency.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="agencyEmail" 
+                               value="{{ agency.email }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="agencyPhone" 
+                               value="{{ agency.phone }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">License Valid Until</label>
+                        <input type="date" class="form-control readonly-field" 
+                               value="{{ agency.license_valid_until }}" readonly>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="agencyAddress" 
+                                  rows="3">{{ agency.address }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agency Branding -->
+            <div class="form-section">
+                <div class="section-title">Agency Branding</div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div id="currentLogo">
+                            {% if agency.logo_url %}
+                                <img src="{{ agency.logo }}" alt="Agency Logo" class="agency-logo">
+                            {% else %}
+                                <div class="logo-placeholder">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="logoUpload" class="form-label">Agency Logo</label>
+                            <input class="form-control" type="file" id="logoUpload" 
+                                   accept="image/*" onchange="previewLogo(event)">
+                            <div class="form-text">
+                                Recommended size: 400x400 pixels. Max file size: 2MB
+                            </div>
+                        </div>
+                        <img id="logoPreview" class="agency-logo" alt="Logo Preview">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex align-items-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+                <div id="saveFeedback" class="save-feedback">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Changes saved successfully</span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+// Preview logo before upload
+function previewLogo(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('logoPreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+// Save settings
+async function saveSettings(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('agencySettingsForm');
+    const saveFeedback = document.getElementById('saveFeedback');
+    
+    try {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('agencyName').value);
+        formData.append('email', document.getElementById('agencyEmail').value);
+        formData.append('phone', document.getElementById('agencyPhone').value);
+        formData.append('address', document.getElementById('agencyAddress').value);
+        
+        // Add logo if a new one was selected
+        const logoInput = document.getElementById('logoUpload');
+        if (logoInput.files.length > 0) {
+            formData.append('logo', logoInput.files[0]);
+        }
+
+        const response = await fetch(`/api/agency/update/{{ agency.id }}/`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Show success feedback
+            saveFeedback.className = 'save-feedback success d-flex';
+            saveFeedback.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>Changes saved successfully</span>
+            `;
+            
+            // Hide feedback after 3 seconds
+            setTimeout(() => {
+                saveFeedback.style.display = 'none';
+            }, 3000);
+
+            // Reload the page to show updated information
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Failed to save changes');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Show error feedback
+        saveFeedback.className = 'save-feedback error d-flex';
+        saveFeedback.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${error.message}</span>
+        `;
+    }
+
+    return false;
+}
+</script>
+{% endblock %}

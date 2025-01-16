@@ -11,6 +11,8 @@ from .serializers import AgencySerializerAPI
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from .serializers import AgentSerializerAgency
+from rest_framework.views import APIView
+from .serializers import AgencyUpdateSerializer
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -178,3 +180,48 @@ def get_agency_agents(request, agency_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
     
+class AgencyUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, agency_id):
+        """
+        Get agency details
+        """
+        agency = get_object_or_404(Agency, id=agency_id)
+        serializer = AgencyUpdateSerializer(agency)
+        return Response(serializer.data)
+
+    def patch(self, request, agency_id):
+        """
+        Update agency details
+        """
+        agency = get_object_or_404(Agency, id=agency_id)
+        
+        # Check if user has permission to update agency
+        if not (request.user == agency.principal_user or request.user.is_superuser):
+            return Response(
+                {"error": "You don't have permission to update this agency"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Use partial=True to allow partial updates
+        serializer = AgencyUpdateSerializer(
+            agency,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        
+        if serializer.is_valid():
+            try:
+                agency = serializer.save()
+                return Response({
+                    "message": "Agency updated successfully",
+                    "agency": AgencyUpdateSerializer(agency).data
+                })
+            except Exception as e:
+                return Response({
+                    "error": str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

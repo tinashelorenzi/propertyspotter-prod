@@ -112,6 +112,8 @@ def dashboard(request):
         else:
             print("Failed to fetch agency data:", agency_response.status_code, agency_response.text)
         return redirect('/agency')
+    elif request.session.get('userData', {}).get('role') == 'Agent':
+        return redirect('/agent/dashboard')
     else:
         print("Rendering admin dashboard")
         return render(request, 'admin_dashboard.html', context)
@@ -668,3 +670,11 @@ def agency_settings(request):
 @securedRoute
 def agency_admin_profile(request):
     return render(request, 'agency_admin_profile.html')
+
+#Agent Routes
+@securedRoute
+def agent_dashboard(request):
+    context = {
+        'page_title': 'Agent Dashboard'
+    }
+    return render(request, 'agents/dashboard.html', context)

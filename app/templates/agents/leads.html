@@ -1,0 +1,214 @@
+{% extends 'base/base_agent.html' %}
+
+{% block content %}
+<div class="leads-container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">My Leads</h1>
+            <p class="text-muted">Manage and track your property leads</p>
+        </div>
+    </div>
+
+    <!-- Leads Table Card -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="leadsTable">
+                    <thead>
+                        <tr>
+                            <th>Property Details</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Commission</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center">Loading leads...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Details Modal -->
+    <!-- Property Details Modal -->
+<div class="modal fade" id="propertyDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Property Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Property Images -->
+                <div class="property-images mb-4">
+                    <div id="propertyImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner" id="modalPropertyImages">
+                            <!-- Images will be populated via JavaScript -->
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#propertyImageCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Core Property Details -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Property Information</h6>
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Property Type</dt>
+                                    <dd class="col-sm-8" id="modalPropertyType">-</dd>
+                                    
+                                    <dt class="col-sm-4">Status</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge" id="modalPropertyStatus">-</span>
+                                    </dd>
+                                    
+                                    <dt class="col-sm-4">Address</dt>
+                                    <dd class="col-sm-8" id="modalAddress">-</dd>
+                                    
+                                    <dt class="col-sm-4">Bedrooms</dt>
+                                    <dd class="col-sm-8" id="modalBedrooms">-</dd>
+                                    
+                                    <dt class="col-sm-4">Bathrooms</dt>
+                                    <dd class="col-sm-8" id="modalBathrooms">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Owner & Financial Details -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Owner & Financial Details</h6>
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Owner Name</dt>
+                                    <dd class="col-sm-8" id="modalOwnerName">-</dd>
+                                    
+                                    <dt class="col-sm-4">Contact</dt>
+                                    <dd class="col-sm-8" id="modalOwnerContact">-</dd>
+                                    
+                                    <dt class="col-sm-4">Price</dt>
+                                    <dd class="col-sm-8" id="modalPrice">-</dd>
+                                    
+                                    <dt class="col-sm-4">Commission</dt>
+                                    <dd class="col-sm-8" id="modalCommission">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reference Details -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Reference Information</h6>
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Lead Source</dt>
+                                    <dd class="col-sm-8" id="modalLeadSource">-</dd>
+                                    
+                                    <dt class="col-sm-4">Reference</dt>
+                                    <dd class="col-sm-8" id="modalReferenceName">-</dd>
+                                    
+                                    <dt class="col-sm-4">Details</dt>
+                                    <dd class="col-sm-8" id="modalReferenceDetails">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Notes</h6>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small">Spotter Notes</label>
+                                    <p class="bg-light p-2 rounded mb-3" id="modalSpotterNotes">-</p>
+                                </div>
+                                <div>
+                                    <label class="form-label text-muted small">Agent Notes</label>
+                                    <p class="bg-light p-2 rounded mb-0" id="modalAgentNotes">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metadata -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            Created: <span id="modalCreatedAt">-</span> | 
+                            Last Updated: <span id="modalUpdatedAt">-</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Progress Update Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Lead Progress</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Commission Step -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">1. Commission Details</h6>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">R</span>
+                            <input type="number" class="form-control" id="commissionAmount" placeholder="Enter commission amount">
+                        </div>
+                    </div>
+
+                    <!-- Status Step -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">2. Update Status</h6>
+                        <select class="form-select" id="propertyStatus">
+                            <option value="">Select Status</option>
+                            <option value="New Submission">New Submission</option>
+                            <option value="Unsuccessful">Unsuccessful</option>
+                            <option value="Pending Mandate">Pending Mandate</option>
+                            <option value="Already Listed">Already Listed</option>
+                            <option value="Listed">Listed</option>
+                            <option value="Sold">Sold</option>
+                            <option value="Commission Paid">Spotter Commission Paid</option>
+                            <option value="Owner Not Found">Owner Not Found</option>
+                            <option value="Other Sole Mandate">Other Sole Mandate</option>
+                        </select>
+                        <div class="form-text text-muted mt-2" id="statusHelpText"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveProgress">Save Progress</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden input for storing current lead ID -->
+<input type="hidden" id="currentLeadId">
+
+{% endblock %}

@@ -3,6 +3,7 @@ from .models import Lead
 from properties.serializers import PropertySerializerAPI, PropertySerializer
 from users.serializers import UserSerializer, AgencySerializer
 from agency_management.serializers import AgencySerializer
+from properties.models import Property
 
 class LeadSerializer(serializers.ModelSerializer):
     spotter = UserSerializer(read_only=True)
@@ -36,3 +37,30 @@ class LeadSerializerAPI(serializers.ModelSerializer):
             print(f"Error in serializer create: {e}")
             raise serializers.ValidationError(str(e))
 
+class PropertyMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Property
+        fields = ['id', 'address', 'price', 'total_bedrooms', 'total_bathrooms', 'property_type']
+
+class LeadSerializerAgent(serializers.ModelSerializer):
+    property_details = PropertyMinimalSerializer(source='property', read_only=True)
+    days_since_created = serializers.SerializerMethodField()
+    days_since_updated = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lead
+        fields = [
+            'id', 'potential', 'status', 'source', 'notes',
+            'created_at', 'updated_at', 'property_details',
+            'days_since_created', 'days_since_updated'
+        ]
+
+    def get_days_since_created(self, obj):
+        from django.utils import timezone
+        delta = timezone.now() - obj.created_at
+        return delta.days
+
+    def get_days_since_updated(self, obj):
+        from django.utils import timezone
+        delta = timezone.now() - obj.updated_at
+        return delta.days

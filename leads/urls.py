@@ -9,4 +9,7 @@ urlpatterns = [
    path('<uuid:lead_id>/assign-agent/', views.assign_to_agent),
    path('new/', views.create_lead),
    path('<uuid:lead_id>/mark-paid/', views.mark_lead_commission_paid, name='mark-lead-paid'),
+
+   path('by-agent/<str:agent_id>/', views.agent_leads, name='agent-leads'),
+   path('agent-stats/<str:agent_id>/', views.agent_lead_stats, name='agent-lead-stats'),
 ]

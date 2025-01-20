@@ -1,0 +1,571 @@
+{% extends 'base_agent.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(145deg, #2c3e50, #34495e);
+        border-radius: 10px;
+        padding: 1.5rem;
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card .icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #3498db;
+    }
+
+    .stat-card .number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #ecf0f1;
+    }
+
+    .stat-card .label {
+        color: #95a5a6;
+        font-size: 0.9rem;
+    }
+
+    .stat-card .trend {
+        font-size: 0.9rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 50px;
+        display: inline-block;
+    }
+
+    .trend-up {
+        background-color: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+    }
+
+    .trend-down {
+        background-color: rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+    }
+
+    .chart-container {
+        background-color: #2c3e50;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .leads-table {
+        background-color: #2c3e50;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .leads-table th {
+        background-color: #34495e;
+        color: #ecf0f1;
+        font-weight: 500;
+        border: none;
+        padding: 1rem;
+    }
+
+    .leads-table td {
+        border-color: #455d7a;
+        color: #ecf0f1;
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    .potential-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .potential-hot {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    .potential-luke-warm {
+        background-color: #f1c40f;
+        color: #2c3e50;
+    }
+
+    .potential-cold {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .filter-section {
+        background-color: #34495e;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-section select {
+        background-color: #2c3e50;
+        border: 1px solid #455d7a;
+        color: #ecf0f1;
+    }
+
+    .property-card {
+        background-color: #34495e;
+        border-radius: 5px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .property-card h6 {
+        color: #3498db;
+        margin-bottom: 0.25rem;
+    }
+
+    .property-card p {
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .action-btn {
+        padding: 0.4rem 0.8rem;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .refresh-btn {
+        background-color: #3498db;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        color: white;
+        transition: background-color 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+        background-color: #2980b9;
+    }
+
+    .loading {
+        animation: rotate 1s infinite linear;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="number" id="total-leads">-</div>
+                <div class="label">Total Leads</div>
+                <div class="trend trend-up" id="leads-trend">
+                    <i class="fas fa-arrow-up"></i> <span>0%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="icon">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="number" id="hot-leads">-</div>
+                <div class="label">Hot Leads</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="number" id="conversion-rate">-</div>
+                <div class="label">Conversion Rate</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="number" id="recent-leads">-</div>
+                <div class="label">Last 30 Days</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="chart-container">
+                <h5 class="mb-3">Lead Distribution</h5>
+                <canvas id="leadsPotentialChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="chart-container">
+                <h5 class="mb-3">Lead Status Breakdown</h5>
+                <canvas id="leadsStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leads Table Section -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Filters -->
+            <div class="filter-section d-flex gap-3 align-items-center">
+                <select class="form-select w-auto" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="NEW_SUBMISSION">New Submission</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="SOLD">Sold</option>
+                </select>
+                <select class="form-select w-auto" id="potentialFilter">
+                    <option value="">All Potentials</option>
+                    <option value="HOT">Hot</option>
+                    <option value="LUKE_WARM">Luke Warm</option>
+                    <option value="COLD">Cold</option>
+                </select>
+                <select class="form-select w-auto" id="daysFilter">
+                    <option value="">All Time</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                </select>
+                <button class="refresh-btn ms-auto" id="refresh-table">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="leads-table">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Property Details</th>
+                            <th>Potential</th>
+                            <th>Status</th>
+                            <th>Days Active</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-table-body">
+                        <!-- Table content will be loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+// Wait for token to be available
+async function waitForToken(maxAttempts = 10) {
+    for (let i = 0; i < maxAttempts; i++) {
+        if (window.authToken) return true;
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    return false;
+}
+
+// Function to format date
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Function to get potential badge HTML
+function getPotentialBadge(potential) {
+    const classes = {
+        'Hot': 'potential-hot',
+        'Luke Warm': 'potential-luke-warm',
+        'Cold': 'potential-cold'
+    };
+    return `<span class="potential-badge ${classes[potential] || ''}">${potential || 'Unknown'}</span>`;
+}
+
+// Function to get status badge HTML
+function getStatusBadge(status) {
+    const classes = {
+        'NEW_SUBMISSION': 'bg-primary',
+        'IN_PROGRESS': 'bg-warning text-dark',
+        'SOLD': 'bg-success'
+    };
+    const displayStatus = (status || '').replace(/_/g, ' ');
+    return `<span class="status-badge ${classes[status] || 'bg-secondary'}">${displayStatus}</span>`;
+}
+
+// Initialize charts
+function initializeCharts() {
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#ecf0f1',
+                    padding: 20,
+                    font: { size: 12 }
+                }
+            }
+        }
+    };
+
+    // Potential Distribution Chart
+    const potentialCtx = document.getElementById('leadsPotentialChart');
+    if (potentialCtx) {
+        window.potentialChart = new Chart(potentialCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Hot', 'Luke Warm', 'Cold'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#e74c3c', '#f1c40f', '#3498db']
+                }]
+            },
+            options: commonOptions
+        });
+    }
+
+    // Status Breakdown Chart
+    const statusCtx = document.getElementById('leadsStatusChart');
+    if (statusCtx) {
+        window.statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['New', 'In Progress', 'Sold'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#3498db', '#f1c40f', '#2ecc71']
+                }]
+            },
+            options: commonOptions
+        });
+    }
+}
+
+// Function to load dashboard stats
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/api/leads/agent-stats/{{ request.user.id }}/', {
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        
+        const stats = await response.json();
+        console.log('Stats loaded:', stats);
+
+        // Update stat cards
+        document.getElementById('total-leads').textContent = stats.total_leads || '0';
+        document.getElementById('hot-leads').textContent = stats.leads_by_potential?.hot || '0';
+        document.getElementById('conversion-rate').textContent = 
+            `${stats.conversion_rates?.conversion_rate || '0'}%`;
+        document.getElementById('recent-leads').textContent = 
+            stats.recent_activity?.last_30_days || '0';
+
+        // Update charts
+        if (window.potentialChart && stats.leads_by_potential) {
+            window.potentialChart.data.datasets[0].data = [
+                stats.leads_by_potential.hot || 0,
+                stats.leads_by_potential.luke_warm || 0,
+                stats.leads_by_potential.cold || 0
+            ];
+            window.potentialChart.update();
+        }
+
+        if (window.statusChart && stats.leads_by_status) {
+            window.statusChart.data.datasets[0].data = [
+                stats.leads_by_status.NEW_SUBMISSION || 0,
+                stats.leads_by_status.IN_PROGRESS || 0,
+                stats.leads_by_status.SOLD || 0
+            ];
+            window.statusChart.update();
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load dashboard statistics'
+        });
+    }
+}
+
+// Function to load leads table
+async function loadLeadsTable() {
+    try {
+        const filters = {
+            status: document.getElementById('statusFilter').value,
+            potential: document.getElementById('potentialFilter').value,
+            days: document.getElementById('daysFilter').value
+        };
+        
+        const queryString = new URLSearchParams(
+            Object.entries(filters).filter(([_, v]) => v)
+        ).toString();
+        
+        const response = await fetch(`/api/leads/by-agent/{{ request.user.id }}/?${queryString}`, {
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch leads');
+        
+        const leads = await response.json();
+        console.log('Leads loaded:', leads);
+        
+        const tableBody = document.getElementById('leads-table-body');
+        if (!tableBody) return;
+        
+        if (!leads || !leads.length) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-4">No leads found</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tableBody.innerHTML = leads.map(lead => `
+            <tr>
+                <td>
+                    <div class="property-card">
+                        <h6>${lead.property_details?.address || 'No Address'}</h6>
+                        <p class="mb-0">
+                            ${lead.property_details?.total_bedrooms || '0'} beds, 
+                            ${lead.property_details?.total_bathrooms || '0'} baths | 
+                            ${lead.property_details?.price ? 
+                              '$' + lead.property_details.price.toLocaleString() : 
+                              'Price N/A'}
+                        </p>
+                    </div>
+                </td>
+                <td>${getPotentialBadge(lead.potential)}</td>
+                <td>${getStatusBadge(lead.status)}</td>
+                <td>${lead.days_since_created || '0'} days</td>
+                <td>${formatDate(lead.updated_at)}</td>
+                <td>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary action-btn" 
+                                onclick="viewLeadDetails('${lead.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-info action-btn" 
+                                onclick="updateLeadStatus('${lead.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading leads:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load leads data'
+        });
+    }
+}
+
+// Initialize dashboard
+async function initializeDashboard() {
+    try {
+        const hasToken = await waitForToken();
+        if (!hasToken) {
+            throw new Error('Auth token not available');
+        }
+
+        initializeCharts();
+        await Promise.all([
+            loadDashboardStats(),
+            loadLeadsTable()
+        ]);
+
+        // Setup filter change handlers
+        ['statusFilter', 'potentialFilter', 'daysFilter'].forEach(filterId => {
+            const element = document.getElementById(filterId);
+            if (element) {
+                element.addEventListener('change', loadLeadsTable);
+            }
+        });
+
+        // Setup refresh button
+        const refreshBtn = document.getElementById('refresh-table');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                const icon = refreshBtn.querySelector('i');
+                refreshBtn.disabled = true;
+                if (icon) icon.classList.add('loading');
+                
+                try {
+                    await Promise.all([
+                        loadDashboardStats(),
+                        loadLeadsTable()
+                    ]);
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Dashboard data refreshed',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } catch (error) {
+                    console.error('Error refreshing data:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to refresh data'
+                    });
+                } finally {
+                    if (icon) icon.classList.remove('loading');
+                    refreshBtn.disabled = false;
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to initialize dashboard'
+        });
+    }
+}
+
+// Start initialization when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeDashboard);
+</script>
+{% endblock %}

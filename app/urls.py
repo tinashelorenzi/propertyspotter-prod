@@ -23,4 +23,7 @@ urlpatterns = [
 	    path('agency/properties/', views.agency_properties, name='agency_properties'),
 	    path('agency/settings/', views.agency_settings, name='agency_settings'),
 	    path('agency/profile/', views.agency_admin_profile, name='agency_admin_profile'),
+
+	    #Agent Routes
+	    path('agent/dashboard', views.agent_dashboard, name='agent_dashboard'),
 ]

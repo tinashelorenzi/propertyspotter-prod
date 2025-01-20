@@ -1,0 +1,543 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PropertySpotter - Agent Dashboard</title>
+    
+    <!-- CSS Links -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.min.css">
+    <link rel="stylesheet" href="{% static 'css/base_agent.css' %}">
+    <style>
+        /* base_agent.css */
+
+:root {
+    --primary-blue: #0d6efd;
+    --secondary-blue: #1e54d3;
+    --light-bg: #f8f9fa;
+    --text-dark: #333333;
+    --sidebar-width: 250px;
+    --header-height: 60px;
+    --transition-speed: 0.3s;
+}
+
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--light-bg);
+    color: var(--text-dark);
+}
+
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Sidebar Styles */
+#sidebar {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    background: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    transition: all var(--transition-speed);
+    z-index: 1000;
+    height: 100vh;
+    position: fixed;
+}
+
+#sidebar.collapsed {
+    margin-left: calc(-1 * var(--sidebar-width));
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.sidebar-logo {
+    max-width: 180px;
+    height: auto;
+}
+
+#sidebar ul.components {
+    padding: 20px 0;
+}
+
+#sidebar ul li {
+    padding: 0 15px;
+    margin-bottom: 5px;
+}
+
+#sidebar ul li a {
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all var(--transition-speed);
+}
+
+#sidebar ul li a i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+#sidebar ul li a:hover,
+#sidebar ul li.active a {
+    background: var(--primary-blue);
+    color: white;
+}
+
+/* Content Area Styles */
+#content {
+    width: 100%;
+    min-height: 100vh;
+    margin-left: var(--sidebar-width);
+    transition: all var(--transition-speed);
+}
+
+#content.full-width {
+    margin-left: 0;
+}
+
+/* Navbar Styles */
+.navbar {
+    padding: 15px;
+    background: white !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    height: var(--header-height);
+}
+
+#sidebarCollapse {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-dark);
+}
+
+#sidebarCollapse:hover {
+    color: var(--primary-blue);
+}
+
+/* User Dropdown Styles */
+.dropdown-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-dark);
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-toggle:hover,
+.dropdown-toggle:focus {
+    color: var(--primary-blue);
+    background: transparent;
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.dropdown-item {
+    padding: 8px 15px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item:hover {
+    background: var(--light-bg);
+    color: var(--primary-blue);
+}
+
+.dropdown-item i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Main Content Container */
+.container-fluid {
+    padding: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+    }
+    
+    #sidebar.active {
+        margin-left: 0;
+    }
+    
+    #content {
+        margin-left: 0;
+    }
+    
+    .navbar {
+        padding: 10px;
+    }
+    
+    .dropdown-toggle {
+        padding: 5px 10px;
+    }
+    
+    .sidebar-logo {
+        max-width: 150px;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn var(--transition-speed);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Utility Classes */
+.shadow-sm {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+}
+
+.shadow-md {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+}
+
+.rounded-lg {
+    border-radius: 8px !important;
+}
+/* Add/Update these styles in base_agent.css */
+
+/* Mobile Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: all 0.3s;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Mobile Sidebar Adjustments */
+@media (max-width: 768px) {
+    #sidebar {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+        background: white;
+        transition: all 0.3s;
+    }
+
+    #sidebar.active {
+        left: 0;
+    }
+
+    #content {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .navbar {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    /* Ensure the toggle button is always visible */
+    #sidebarCollapse {
+        display: block;
+        position: relative;
+        z-index: 1001;
+    }
+}
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <img src="{% static 'images/logo.png' %}" alt="PropertySpotter" class="sidebar-logo">
+        </div>
+
+        <ul class="list-unstyled components">
+            <li {% if request.resolver_match.url_name == 'agent_dashboard' %}class="active"{% endif %}>
+                <a href="/">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li {% if request.resolver_match.url_name == 'agent_leads' %}class="active"{% endif %}>
+                <a href="{/">
+                    <i class="fas fa-users"></i>
+                    Leads
+                </a>
+            </li>
+            <li {% if request.resolver_match.url_name == 'properties_sold' %}class="active"{% endif %}>
+                <a href="/">
+                    <i class="fas fa-home"></i>
+                    Properties Sold
+                </a>
+            </li>
+            <li {% if request.resolver_match.url_name == 'agent_settings' %}class="active"{% endif %}>
+                <a href="/">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div id="content">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <!-- Sidebar Toggle -->
+                <button type="button" id="sidebarCollapse" class="btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Navbar Right Side -->
+                <div class="ms-auto">
+                    <div class="dropdown">
+                        <button class="btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-2"></i>
+                            {{ USERDATA.first_name }} {{ USERDATA.last_name }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="#">
+                                    <i class="fas fa-user-cog me-2"></i>
+                                    Profile Settings
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="container-fluid py-4">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.min.js"></script>
+<script>
+    // Global auth token
+window.authToken = null;
+
+// Token fetching function
+async function fetchToken() {
+    try {
+        const response = await fetch('/token/');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        window.authToken = data.token;
+        return data.token;
+    } catch (error) {
+        console.error("Error fetching token:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Authentication Error',
+            text: 'Failed to authenticate. Please refresh the page or try logging in again.',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'Reload Page',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.reload();
+            }
+        });
+        return null;
+    }
+}
+
+// Initialize token on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchToken();
+});
+
+// Optional: Refresh token periodically (e.g., every 15 minutes)
+setInterval(fetchToken, 15 * 60 * 1000);
+    // base_agent.js
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const sidebarCollapse = document.getElementById('sidebarCollapse');
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    
+    // Sidebar Toggle Function
+    function toggleSidebar() {
+        sidebar.classList.toggle('collapsed');
+        content.classList.toggle('full-width');
+        
+        // Store sidebar state in localStorage
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    }
+    
+    // Initialize Sidebar State from localStorage
+    function initSidebarState() {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (sidebarCollapsed) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('full-width');
+        }
+    }
+    
+    // Handle Window Resize
+    function handleResize() {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('full-width');
+        } else {
+            // Restore saved state on desktop
+            initSidebarState();
+        }
+    }
+    
+    // Initialize Bootstrap Tooltips
+    function initTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+    
+    // Initialize Bootstrap Dropdowns
+    function initDropdowns() {
+        dropdownToggles.forEach(dropdown => {
+            new bootstrap.Dropdown(dropdown);
+        });
+    }
+    
+    // Close Sidebar on Mobile when clicking outside
+    function handleOutsideClick(event) {
+        if (window.innerWidth <= 768) {
+            if (!sidebar.contains(event.target) && 
+                !event.target.matches('#sidebarCollapse') && 
+                !sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+                content.classList.add('full-width');
+            }
+        }
+    }
+    
+    // Sweet Alert Configuration
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+    
+    // Handle Logout Confirmation
+    function handleLogout(event) {
+        const logoutLinks = document.querySelectorAll('a[href*="logout"]');
+        logoutLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Logout Confirmation',
+                    text: 'Are you sure you want to logout?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes, logout',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = link.href;
+                    }
+                });
+            });
+        });
+    }
+    
+    // Event Listeners
+    sidebarCollapse.addEventListener('click', toggleSidebar);
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('click', handleOutsideClick);
+    
+    // Initialize Components
+    initSidebarState();
+    initTooltips();
+    initDropdowns();
+    handleLogout();
+    handleResize(); // Initial check for mobile
+    
+    // Show Welcome Toast (if user just logged in)
+    if (sessionStorage.getItem('justLoggedIn')) {
+        Toast.fire({
+            icon: 'success',
+            title: `Welcome back, ${document.querySelector('#userDropdown').textContent.trim()}`
+        });
+        sessionStorage.removeItem('justLoggedIn');
+    }
+    
+    // Handle Active Navigation
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('#sidebar a').forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.parentElement.classList.add('active');
+        }
+    });
+    
+    // Preload SweetAlert CSS
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'style';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.min.css';
+    document.head.appendChild(link);
+});
+</script>
+<script src="{% static 'js/base_agent.js' %}"></script>
+
+</body>
+</html>

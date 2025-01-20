@@ -1,0 +1,521 @@
+<!-- dashboard.html -->
+{% extends 'base/base_agent.html' %}
+
+{% block content %}
+<style>
+	/* dashboard.css */
+
+/* Dashboard Container */
+.dashboard-container {
+    padding: 20px;
+}
+
+/* Welcome Section */
+.welcome-section {
+    margin-bottom: 2rem;
+}
+
+.welcome-section h1 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-section p {
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+/* Stats Cards */
+.stats-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 50%;
+}
+
+.stats-icon i {
+    font-size: 1.2rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.card-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+/* Recent Leads Table */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #495057;
+    border-bottom: none;
+    padding: 1rem;
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.04);
+}
+
+/* Status and Potential Badges */
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Status Colors */
+.badge.bg-primary {
+    background-color: #0d6efd !important;
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge.bg-info {
+    background-color: #0dcaf0 !important;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Action Buttons */
+.btn-outline-primary {
+    border-color: #0d6efd;
+    color: #0d6efd;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+/* Card Header */
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header h5 {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 15px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .stats-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .card-title {
+        font-size: 1.5rem;
+    }
+    
+    .table-responsive {
+        margin: 0 -1rem;
+    }
+    
+    .welcome-section h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Loading States */
+.loading-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Hover Effects */
+.btn-sm {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Empty State */
+.table-empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+/* Custom Scrollbar for Table */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Stats Card Small Text */
+.small-stats-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* Utility Classes */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.font-weight-medium {
+    font-weight: 500;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
+<div class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="welcome-section mb-4">
+        <h1 class="h3">Welcome back, {{ USERDATA.first_name }}!</h1>
+        <p class="text-muted">Here's your sales performance overview</p>
+    </div>
+
+    <!-- Stats Cards Row -->
+    <div class="row g-4 mb-4">
+        <!-- Total Leads Card -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Total Leads</h6>
+                            <h2 class="card-title mb-0" id="totalLeadsCount">-</h2>
+                        </div>
+                        <div class="stats-icon bg-light rounded-circle p-3">
+                            <i class="fas fa-users text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-success" id="last30DaysLeads">
+                            <i class="fas fa-arrow-up"></i> - new in 30 days
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Rate Card -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Conversion Rate</h6>
+                            <h2 class="card-title mb-0" id="conversionRate">-</h2>
+                        </div>
+                        <div class="stats-icon bg-light rounded-circle p-3">
+                            <i class="fas fa-chart-line text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted" id="totalConverted">
+                            - leads converted
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hot Leads Card -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Hot Leads</h6>
+                            <h2 class="card-title mb-0" id="hotLeadsCount">-</h2>
+                        </div>
+                        <div class="stats-icon bg-light rounded-circle p-3">
+                            <i class="fas fa-fire text-danger"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">High potential leads</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Card -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">90-Day Activity</h6>
+                            <h2 class="card-title mb-0" id="ninetyDayActivity">-</h2>
+                        </div>
+                        <div class="stats-icon bg-light rounded-circle p-3">
+                            <i class="fas fa-clock text-info"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">Last 90 days leads</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Leads Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Leads</h5>
+                <a href="#" class="btn btn-sm btn-primary">
+                    View All Leads
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Potential</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentLeadsTable">
+                        <tr>
+                            <td colspan="5" class="text-center">Loading leads...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this to access the user ID in JavaScript -->
+<script>
+    const currentAgentId = "{{ USERDATA.id }}";
+</script>
+<script>
+	// dashboard.js
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Fetch dashboard data
+    await loadDashboardData();
+    // Fetch recent leads
+    await loadRecentLeads();
+});
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch(`/api/leads/agent-stats/${currentAgentId}/`, {
+            headers: {
+                'Authorization': `Token ${window.authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard data');
+        }
+
+        const data = await response.json();
+        updateDashboardStats(data);
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        showErrorToast('Failed to load dashboard statistics');
+    }
+}
+
+async function loadRecentLeads() {
+    try {
+        const response = await fetch(`/api/leads/by-agent/${currentAgentId}/`, {
+            headers: {
+                'Authorization': `Token ${window.authToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch leads');
+        }
+
+        const data = await response.json();
+        updateRecentLeads(data.slice(0, 3)); // Show only 3 most recent leads
+    } catch (error) {
+        console.error('Error loading recent leads:', error);
+        showErrorToast('Failed to load recent leads');
+    }
+}
+
+function updateDashboardStats(data) {
+    // Update statistics
+    document.getElementById('totalLeadsCount').textContent = data.total_leads;
+    document.getElementById('last30DaysLeads').textContent = 
+        `${data.recent_activity.last_30_days} new in 30 days`;
+    
+    document.getElementById('conversionRate').textContent = 
+        `${data.conversion_rates.conversion_rate}%`;
+    document.getElementById('totalConverted').textContent = 
+        `${data.conversion_rates.total_converted} leads converted`;
+    
+    document.getElementById('hotLeadsCount').textContent = 
+        data.leads_by_potential.hot;
+    
+    document.getElementById('ninetyDayActivity').textContent = 
+        data.recent_activity.last_90_days;
+}
+
+function updateRecentLeads(leads) {
+    const tableBody = document.getElementById('recentLeadsTable');
+    
+    if (!leads.length) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center">No recent leads found</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = leads.map(lead => `
+        <tr>
+            <td>${lead.property.address}</td>
+            <td>
+                <span class="badge bg-${getStatusColor(lead.status)}">
+                    ${lead.status}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-${getPotentialColor(lead.potential)}">
+                    ${lead.potential}
+                </span>
+            </td>
+            <td>${formatDate(lead.created_at)}</td>
+            <td>
+                <a href="/leads/${lead.id}" class="btn btn-sm btn-outline-primary">
+                    View
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'NEW': 'primary',
+        'CONTACTED': 'info',
+        'QUALIFIED': 'warning',
+        'NEGOTIATING': 'success',
+        'SOLD': 'success',
+        'LOST': 'danger'
+    };
+    return colors[status] || 'secondary';
+}
+
+function getPotentialColor(potential) {
+    const colors = {
+        'HOT': 'danger',
+        'LUKE_WARM': 'warning',
+        'COLD': 'info'
+    };
+    return colors[potential] || 'secondary';
+}
+
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+function showErrorToast(message) {
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: message,
+        showConfirmButton: false,
+        timer: 3000
+    });
+}
+</script>
+{% endblock %}

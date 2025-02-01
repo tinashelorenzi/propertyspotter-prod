@@ -289,13 +289,13 @@ body {
 
         <ul class="list-unstyled components">
             <li {% if request.resolver_match.url_name == 'agent_dashboard' %}class="active"{% endif %}>
-                <a href="/">
+                <a href="{% url 'agent_dashboard' %}">
                     <i class="fas fa-tachometer-alt"></i>
                     Dashboard
                 </a>
             </li>
             <li {% if request.resolver_match.url_name == 'agent_leads' %}class="active"{% endif %}>
-                <a href="{/">
+                <a href="{% url 'agent_leads' %}">
                     <i class="fas fa-users"></i>
                     Leads
                 </a>

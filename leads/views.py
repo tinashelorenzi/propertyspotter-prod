@@ -1,17 +1,21 @@
 # views.py
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
 from .models import Lead
-from .serializers import LeadSerializer, LeadSerializerAPI
-from properties.models import Property
+from .serializers import LeadSerializer, LeadSerializerAPI, LeadCommissionSerializer, LeadStatusSerializer
+from properties.models import Property, PropertyStatus
 from .models import Lead, LeadPotential
 from .serializers import LeadSerializer
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import viewsets, permissions
+from django.db import transaction
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -198,3 +202,117 @@ def calculate_conversion_rate(leads_queryset):
     
     converted_leads = leads_queryset.filter(status='COMMISSION_PAID').count()
     return round((converted_leads / total_leads) * 100, 2)
+
+@api_view(['POST'])
+#@authentication_classes([TokenAuthentication])
+@permission_classes([])
+def set_lead_commission(request, lead_id):
+    """
+    Update the commission amount for a specific lead and update related statuses
+    """
+    try:
+        with transaction.atomic():  # Use transaction to ensure both updates succeed or fail together
+            # Get the lead or return 404
+            lead = get_object_or_404(Lead.objects.select_related('assigned_agent', 'property'), id=lead_id)
+            
+            # Debug prints
+            print(f"Request User ID: {request.user.id}")
+            print(f"Assigned Agent ID: {lead.assigned_agent.id if lead.assigned_agent else 'No assigned agent'}")
+            
+            # Check if the user is the assigned agent
+            """
+            if lead.assigned_agent and request.user.id != lead.assigned_agent.id:
+                return Response({
+                    "error": "Unauthorized. You must be the assigned agent to update this lead."
+                }, status=status.HTTP_403_FORBIDDEN)
+            """
+
+            serializer = LeadCommissionSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                commission = serializer.validated_data['commission']
+                
+                # Update the property's commission and status
+                property_instance = lead.property
+                property_instance.commission = commission
+                
+                # Determine status based on commission
+                if commission > 0:
+                    new_status = PropertyStatus.PENDING_MANDATE
+                else:
+                    # If commission is removed or set to 0, revert to NEW_SUBMISSION
+                    new_status = PropertyStatus.NEW_SUBMISSION
+
+                # Update both property and lead status
+                property_instance.status = new_status
+                property_instance.save()
+                
+                # Update lead status
+                lead.status = new_status
+                lead.save()
+
+                return Response({
+                    "message": "Commission and status updated successfully",
+                    "commission": commission,
+                    "status": new_status
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        print(f"Error: {str(e)}")  # Debug print
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+#@authentication_classes([TokenAuthentication])
+@permission_classes([])
+def update_lead_status(request, lead_id):
+    """
+    Update the status of a specific lead
+    """
+    try:
+        with transaction.atomic():  # Use transaction to ensure both updates succeed or fail together
+            # Get the lead or return 404
+            lead = get_object_or_404(Lead.objects.select_related('assigned_agent', 'property'), id=lead_id)
+            
+            """
+            # Check if user is assigned agent
+            if lead.assigned_agent and request.user.id != lead.assigned_agent.id:
+                return Response({
+                    "error": "Unauthorized. You must be the assigned agent to update this lead."
+                }, status=status.HTTP_403_FORBIDDEN)
+            """
+
+            serializer = LeadStatusSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                new_status = serializer.validated_data['status']
+                
+                # Validate status transition based on commission
+                if new_status == PropertyStatus.OWNER_NOT_FOUND and lead.property.commission:
+                    return Response({
+                        "error": "Cannot set status to Owner Not Found when commission is set"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Update both property and lead status
+                property_instance = lead.property
+                property_instance.status = new_status
+                property_instance.save()
+                
+                lead.status = new_status
+                lead.save()
+
+                return Response({
+                    "message": "Status updated successfully",
+                    "status": new_status
+                }, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        print(f"Error: {str(e)}")  # Debug print
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -12,4 +12,6 @@ urlpatterns = [
 
    path('by-agent/<str:agent_id>/', views.agent_leads, name='agent-leads'),
    path('agent-stats/<str:agent_id>/', views.agent_lead_stats, name='agent-lead-stats'),
+   path('<str:lead_id>/set-commission/', views.set_lead_commission, name='set-lead-commission'),
+   path('<str:lead_id>/update-status/', views.update_lead_status, name='update-lead-status'),
 ]

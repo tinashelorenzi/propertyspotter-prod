@@ -12,6 +12,7 @@ django-filter = "*"
 djangorestframework-simplejwt = "*"
 requests = "*"
 python-dateutil = "*"
+django-extensions = "*"
 
 [dev-packages]
 

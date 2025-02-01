@@ -1,4 +1,5 @@
 {% extends 'base/base_agent.html' %}
+{% load static %}
 
 {% block content %}
 <div class="leads-container">
@@ -210,5 +211,7 @@
 
 <!-- Hidden input for storing current lead ID -->
 <input type="hidden" id="currentLeadId">
+<input type="hidden" id="agentId" value="{{ USERDATA.id }}">
 
+<script src="{% static 'agent/js/leads.js' %}"></script>
 {% endblock %}

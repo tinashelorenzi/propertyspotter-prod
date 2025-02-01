@@ -4,6 +4,7 @@ from properties.serializers import PropertySerializerAPI, PropertySerializer
 from users.serializers import UserSerializer, AgencySerializer
 from agency_management.serializers import AgencySerializer
 from properties.models import Property
+from properties.models import PropertyStatus
 
 class LeadSerializer(serializers.ModelSerializer):
     spotter = UserSerializer(read_only=True)
@@ -64,3 +65,17 @@ class LeadSerializerAgent(serializers.ModelSerializer):
         from django.utils import timezone
         delta = timezone.now() - obj.updated_at
         return delta.days
+
+class LeadCommissionSerializer(serializers.ModelSerializer):
+    commission = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        model = Lead
+        fields = ['commission']
+
+class LeadStatusSerializer(serializers.ModelSerializer):
+    status = serializers.ChoiceField(choices=PropertyStatus.choices)
+
+    class Meta:
+        model = Lead
+        fields = ['status']

@@ -678,3 +678,10 @@ def agent_dashboard(request):
         'page_title': 'Agent Dashboard'
     }
     return render(request, 'agents/dashboard.html', context)
+
+@securedRoute
+def agent_leads(request):
+    context = {
+        'page_title': 'Agent Leads'
+    }
+    return render(request, 'agents/leads.html', context)

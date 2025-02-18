@@ -52,10 +52,12 @@
     <!-- Featured Properties -->
     <section class="featured-properties" id="featured">
         <div class="container">
+            {% if DEPLOYMENT_MODE == 'development' %}
             <h2 class="section-title">Properties for you!</h2>
             <p class="section-subtitle">See the best properties across the platform.</p>
             
             <div class="row property-grid">
+                
                 <!-- Property Card Template -->
                 <div class="col-lg-3 col-md-6">
                     <div class="property-card">
@@ -84,7 +86,18 @@
                         </div>
                     </div>
                 </div>
+                {% else %}
+                <div class="row property-grid">
+                <div class="col-12 text-center">
+                    <div class="coming-soon-message">
+                        <i class="fas fa-clock fa-3x mb-3"></i>
+                        <h3>Property Listings Coming Soon!</h3>
+                        <p>We're working hard to bring you the best property listings. Check back soon!</p>
+                    </div>
+                    </div>
+                </div>
                 <!-- More property cards here -->
+                {% endif %}
             </div>
         </div>
     </section>

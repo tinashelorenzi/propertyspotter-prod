@@ -23,6 +23,9 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Customize admin site header
+admin.site.site_header = "Property Spotter Admin"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),

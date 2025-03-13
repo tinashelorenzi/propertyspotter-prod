@@ -733,7 +733,7 @@ def register_agent(request):
         print("Preparing welcome email...")
         try:
             # Prepare welcome email context
-            setup_password_url = f"{settings.SITE_URL}/users/setup-password/{verification_token}/"
+            setup_password_url = f"{settings.SITE_URL}/api/users/setup-password/{verification_token}/"
             welcome_context = {
                 'user': agent,
                 'agency_name': agency_registering,
@@ -763,8 +763,9 @@ def register_agent(request):
                 email_template.save()
             else:
                 print("Creating new email template")
+                unique_template_name = f'agent_welcome_email_{uuid.uuid4().hex[:8]}'
                 email_template = EmailTemplate.objects.create(
-                    name='agent_welcome_email',
+                    name=unique_template_name,
                     subject=f'Welcome to {agency_registering} on {settings.SITE_NAME} - Set Up Your Agent Account',
                     html_content=rendered_content
                 )

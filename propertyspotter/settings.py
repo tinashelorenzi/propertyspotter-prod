@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-i2yg0)uiet=2j8@+4+ntx6!n6^r%ghy7t#6(^lxzsxtt*hobr2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['www.propertyspotter.co.za','propertyspotter.co.za']
+ALLOWED_HOSTS = ['www.propertyspotter.co.za','propertyspotter.co.za','localhost']
 
 APPEND_SLASH=True
 # Application definition

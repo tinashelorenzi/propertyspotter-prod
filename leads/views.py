@@ -98,7 +98,7 @@ def create_lead(request):
            message = client.messages.create(
                from_='whatsapp:+14155238886',
                body=f'Hi! We\'ve received a new lead submitted to the platform, please assign it to an agency! Here is the lead Data: {lead_data}',
-               to='whatsapp:{NOTIFICATIONS}'
+               to=f'whatsapp:{NOTIFICATIONS}'
            )
            print(message.sid)
            return Response(serializer.data, status=status.HTTP_201_CREATED)

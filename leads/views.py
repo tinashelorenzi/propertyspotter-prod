@@ -25,7 +25,7 @@ load_dotenv()
 TWILIO_AUTH = os.getenv('TWILIO_AUTH')
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 NOTIFICATIONS = os.getenv('NOTIFICATIONS')
-client = Client(account_sid, auth_token)
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

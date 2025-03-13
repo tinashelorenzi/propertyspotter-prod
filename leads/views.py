@@ -16,6 +16,16 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework import viewsets, permissions
 from django.db import transaction
+from twilio.rest import Client
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TWILIO_AUTH = os.getenv('TWILIO_AUTH')
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+NOTIFICATIONS = os.getenv('NOTIFICATIONS')
+client = Client(account_sid, auth_token)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -84,6 +94,13 @@ def create_lead(request):
            print("Serializer is valid")
            lead = serializer.save()
            print(f"Lead saved: {lead}")
+           #Send whatsapp message
+           message = client.messages.create(
+               from_='whatsapp:+14155238886',
+               body=f'Hi! We\'ve received a new lead submitted to the platform, please assign it to an agency! Here is the lead Data: {lead_data}',
+               to='whatsapp:{NOTIFICATIONS}'
+           )
+           print(message.sid)
            return Response(serializer.data, status=status.HTTP_201_CREATED)
        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
        

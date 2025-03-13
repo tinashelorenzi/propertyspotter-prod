@@ -13,6 +13,7 @@ djangorestframework-simplejwt = "*"
 requests = "*"
 python-dateutil = "*"
 django-extensions = "*"
+twilio = "*"
 
 [dev-packages]
 

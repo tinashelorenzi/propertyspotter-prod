@@ -19,12 +19,14 @@ from django.db import transaction
 from twilio.rest import Client
 import os
 from dotenv import load_dotenv
+import whatsapp
 
 load_dotenv()
 
 TWILIO_AUTH = os.getenv('TWILIO_AUTH')
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 NOTIFICATIONS = os.getenv('NOTIFICATIONS')
+TWILIO_FROM = os.getenv('TWILIO_FROM')
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH)
 
 @api_view(['GET'])
@@ -65,6 +67,24 @@ def assign_to_agent(request, lead_id):
    agent_id = request.data.get('agent_id')
    lead.assigned_agent_id = agent_id
    lead.save()
+   # Get assigned agent phone number
+   agent = lead.assigned_agent
+   agent_phone = agent.phone if agent else None
+
+   # Send WhatsApp message to assigned agent
+   if agent_phone:
+       from whatsapp import send_whatsapp_message
+       message = f"New lead assigned: {lead.property.address if lead.property else 'No Address'} - {lead.potential}"
+       send_whatsapp_message(message, agent_phone)
+
+   # Send WhatsApp message to lead spotter
+   spotter_phone = lead.spotter.phone if lead.spotter else None
+   if spotter_phone:
+       from whatsapp import send_whatsapp_message
+       message = f"Hi! {lead.spotter.first_name if lead.spotter else 'Spotter'}, your lead has now been pushed to {lead.assigned_agent.first_name if lead.assigned_agent else 'an agent'} from {lead.assigned_agency.name if lead.assigned_agency else 'an agency'}, we will be in touch with more updates!"
+       send_whatsapp_message(message, spotter_phone)
+    
+
    serializer = LeadSerializer(lead)
    return Response(serializer.data)
 
@@ -96,8 +116,8 @@ def create_lead(request):
            print(f"Lead saved: {lead}")
            #Send whatsapp message
            message = client.messages.create(
-               from_='whatsapp:+14155238886',
-               body=f'Hi! We\'ve received a new lead submitted to the platform, please assign it to an agency! Here is the lead Data: {lead_data}',
+               from_=f'whatsapp:{TWILIO_FROM}',
+               body=f'Hi! We\'ve received a new lead submitted to the platform, please assign it to an agency! Here is the lead Data: \n Spotter: {request.user.first_name} {request.user.last_name} \n Property: {property_instance.address} \n Source: {lead.source} \n Notes: {lead.notes}',
                to=f'whatsapp:{NOTIFICATIONS}'
            )
            print(message.sid)
@@ -303,9 +323,11 @@ def update_lead_status(request, lead_id):
             """
 
             serializer = LeadStatusSerializer(data=request.data)
+            print(request.data)
             
             if serializer.is_valid():
                 new_status = serializer.validated_data['status']
+                property_listing_link = request.data.get('propertyListingLink')
                 
                 # Validate status transition based on commission
                 if new_status == PropertyStatus.OWNER_NOT_FOUND and lead.property.commission:
@@ -319,7 +341,13 @@ def update_lead_status(request, lead_id):
                 property_instance.save()
                 
                 lead.status = new_status
+                lead.property_listing_link = property_listing_link
                 lead.save()
+                #Get lead spotter phone number
+                spotter_phone = lead.spotter.phone if lead.spotter else None
+                if spotter_phone:
+                    from whatsapp import send_whatsapp_message
+                    send_whatsapp_message(f"Hi {lead.spotter.first_name if lead.spotter else 'Spotter'}, your lead has been updated to {new_status}, \n Here is the property listing link: {property_listing_link if property_listing_link else 'No link provided Yet'} \n We will be in touch with more updates!", spotter_phone)
 
                 return Response({
                     "message": "Status updated successfully",

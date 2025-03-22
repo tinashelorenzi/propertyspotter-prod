@@ -36,6 +36,7 @@ class Lead(models.Model):
         blank=True,
         related_name='assigned_leads'
     )
+    property_listing_link = models.URLField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

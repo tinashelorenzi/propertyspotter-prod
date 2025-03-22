@@ -19,7 +19,7 @@ class LeadSerializer(serializers.ModelSerializer):
             'id', 'spotter', 'property', 'property_id', 'potential',
             'created_at', 'updated_at', 'source', 'notes', 'status',
             'assigned_agency', 'assigned_agent', 'pushed_to_agency_at',
-            'assigned_to_agent_at'
+            'assigned_to_agent_at', 'property_listing_link'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'potential',
                            'pushed_to_agency_at', 'assigned_to_agent_at']

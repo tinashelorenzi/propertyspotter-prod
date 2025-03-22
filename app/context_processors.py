@@ -13,7 +13,8 @@ def constants(request):
         'SUPPORT_EMAIL': 'support@example.com',
         'USERDATA': user_data,
         'TOKEN': request.session.get('access_token', None),
-        'DEPLOYMENT_MODE': os.getenv('DEPLOYMENT_MODE'),
+        #'DEPLOYMENT_MODE': os.getenv('DEPLOYMENT_MODE'),
+        'DEPLOYMENT_MODE': 'development',
     }
     
     # Add agency data only if user is an Agency Admin

@@ -58,34 +58,51 @@
             
             <div class="row property-grid">
                 
-                <!-- Property Card Template -->
+                {% for property in properties %}
+                {% if property.status != 'LISTED' %}
                 <div class="col-lg-3 col-md-6">
                     <div class="property-card">
                         <div class="property-image">
-                            <img src="{% static 'images/property1.jpg' %}" alt="Property">
-                            <div class="price-tag">ZAR 2,500,000.00</div>
+                            {% if property.featured_image %}
+                            <img src="{{ property.featured_image.url }}" alt="Property">
+                            {% else %}
+                            <img src="{% static 'images/default-property.jpg' %}" alt="Property">
+                            {% endif %}
+                            {% if property.price %}
+                            <div class="price-tag">ZAR {{ property.price|floatformat:2 }}</div>
+                            {% endif %}
                             <button class="share-btn"><i class="fas fa-share-alt"></i></button>
                         </div>
                         <div class="property-content">
-                            <h3>3 Bedroom House property for sale</h3>
+                            <h3>{{ property.property_type }} property for {{ property.get_status_display|lower }}</h3>
                             <div class="location">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span>South Africa</span>
+                                <span>{{ property.address|default:'South Africa' }}</span>
                             </div>
                             <div class="property-info">
-                                <span><i class="fas fa-bath"></i> 2x Bathroom</span>
-                                <span><i class="fas fa-bed"></i> 3x Bedrooms</span>
+                                {% if property.total_bathrooms %}
+                                <span><i class="fas fa-bath"></i> {{ property.total_bathrooms }}x Bathroom</span>
+                                {% endif %}
+                                {% if property.total_bedrooms %}
+                                <span><i class="fas fa-bed"></i> {{ property.total_bedrooms }}x Bedrooms</span>
+                                {% endif %}
                             </div>
                             <div class="agent-info">
                                 <img src="{% static 'images/era-logo.png' %}" alt="ERA" class="agency-logo">
                                 <div class="agent-details">
-                                    <span class="agent-name">Marlene Wilkens</span>
-                                    <img src="{% static 'images/agent1.jpg' %}" alt="Agent" class="agent-photo">
+                                    <span class="agent-name">{{ property.spotter.get_full_name }}</span>
+                                    {% if property.spotter.profile_image %}
+                                    <img src="{{ property.spotter.profile_image.url }}" alt="Agent" class="agent-photo">
+                                    {% else %}
+                                    <img src="{% static 'images/default-agent.jpg' %}" alt="Agent" class="agent-photo">
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                {% endif %}
+                {% endfor %}
                 {% else %}
                 <div class="row property-grid">
                 <div class="col-12 text-center">
@@ -96,7 +113,6 @@
                     </div>
                     </div>
                 </div>
-                <!-- More property cards here -->
                 {% endif %}
             </div>
         </div>

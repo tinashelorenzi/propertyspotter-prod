@@ -16,8 +16,12 @@ from collections import defaultdict
 CustomUser = get_user_model()
 # Create your views here.
 
+from properties.models import Property
+
 def index(request):
-	return render(request, 'index.html')
+    #get all properties
+    properties = Property.objects.all()
+    return render(request, 'index.html', {'properties': properties})
 
 def login_view(request):
     return render(request, 'login.html')

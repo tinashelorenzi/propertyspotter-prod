@@ -176,6 +176,8 @@ function initializeModalHandlers() {
     saveProgressBtn.addEventListener('click', async () => {
         const commission = commissionInput.value;
         const status = statusSelect.value;
+        const propertyListingLink = document.getElementById('propertyListingLink').value;
+        console.log("Property Listing Link:", propertyListingLink);
 
         // Validation
         if (!status) {
@@ -212,7 +214,7 @@ function initializeModalHandlers() {
                     'Authorization': `Token ${window.authToken}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ status: status })
+                body: JSON.stringify({ status: status, propertyListingLink: propertyListingLink })
             });
             if (!statusResponse.ok) {
                 throw new Error('Failed to update status');
